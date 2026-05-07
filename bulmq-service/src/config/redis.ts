@@ -1,6 +1,10 @@
-const connection = {
-  host: "127.0.0.1",
-  port: 6379,
-};
+import { env } from "./env";
 
+const connection = {
+  host: env.REDIS_HOST,
+  port: parseInt(env.REDIS_PORT),
+  username: env.REDIS_USERNAME,
+  password: env.REDIS_PASSWORD,
+};
+console.log(connection);
 export default connection;

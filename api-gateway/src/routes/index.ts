@@ -17,6 +17,7 @@ import labRoutes from "./lab.routes";
 import adsRoutes from "./ads.routes";
 import roleRoutes from "./role.routes"; 
 import s3Routes from "./s3.routes";
+import bulmqRoutes from "./bulmq.routes";
 
 
 
@@ -40,5 +41,6 @@ router.use("/", labRoutes);
 router.use("/", adsRoutes); 
 router.use("/", roleRoutes);        
 router.use("/", s3Routes);        
+router.use("/", bulmqRoutes);        
 export default router;
 

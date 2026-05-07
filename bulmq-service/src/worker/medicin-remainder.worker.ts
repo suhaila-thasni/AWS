@@ -24,7 +24,7 @@ const medicinWorker: any = new Worker(
       await client.calls.create({
         to: "+91" + user?.data?.data?.phone,
 
-        from: process.env.TWLIO_NUMBER,
+        from: process.env.TWILIO_NUMBER,
 
         twiml: `
     <Response>

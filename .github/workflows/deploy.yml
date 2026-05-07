@@ -1,0 +1,28 @@
+name: CD - Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to project directory
+            cd ~/hostabackend || cd ~/AWS || echo "Project directory not found"
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Restart containers with the new changes
+            sudo docker-compose up -d --build

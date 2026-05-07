@@ -23,6 +23,7 @@ services:
       - ads-service 
       - role-service  
       - s3-service
+      - bulmq-service
     networks:
       - hosta-network
 
@@ -185,6 +186,15 @@ services:
     env_file: ./s3-service/.env
     networks:
       - hosta-network  
+
+  bulmq-service:
+    container_name: bulmq-service
+    build: ./bulmq-service
+    environment:
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+    env_file: ./bulmq-service/.env
+    networks:
+      - hosta-network
 
 networks:
   hosta-network:

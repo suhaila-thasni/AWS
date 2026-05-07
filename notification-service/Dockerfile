@@ -30,9 +30,10 @@ RUN npm ci --omit=dev && rm -f .npmrc
 # Copy compiled code
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
-COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/.sequelizerc* ./
 
+
+RUN if [ -d /app/migrations ]; then cp -r /app/migrations ./migrations; fi
 # Security: run as non-root user
 USER node
 
