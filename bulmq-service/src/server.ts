@@ -13,7 +13,7 @@ const PORT = env.PORT;
 // Database Connection and Server Startup
 const startServer = async () => {
     try {
-        await connectDB();
+        // await connectDB();
        
         await connectRabbitMQ();
         

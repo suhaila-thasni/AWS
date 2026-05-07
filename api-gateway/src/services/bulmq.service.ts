@@ -4,27 +4,24 @@ import { httpClient } from "../utils/httpClient";
 import { SERVICES } from "../config/services";
 import { logger } from "../utils/logger";
 
-// Define the service call
 const callBulmqService = async (options: any) => {
   return httpClient(options);
 };
 
-// Create Circuit Breaker instance
 const breaker = new CircuitBreaker(callBulmqService, {
-  timeout: 50000, 
-  errorThresholdPercentage: 50, 
-  resetTimeout: 15000, 
+  timeout: 10000,
+  errorThresholdPercentage: 50,
+  resetTimeout: 10000,
 });
 
-// Fallback behavior
 breaker.fallback(() => {
-  return { status: 503, data: { success: false, message: "Bulmq service temporarily unavailable" } };
+  return { status: 503, data: { success: false, message: "bulmq service temporarily unavailable" } };
 });
 
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Map /api/bulmq/* to bulmq-service/*
-    const url = `${SERVICES.BULMQ_SERVICE}${req.originalUrl.replace("/api/bulmq", "")}`;
+    const targetPath = req.originalUrl.replace("/api", "");
+    const url = `${SERVICES.BULMQ_SERVICE}${targetPath}`;
 
     const options = {
       method: req.method,
@@ -36,35 +33,33 @@ export const proxyRequest = async (req: Request, res: Response, next: NextFuncti
           const { host, "content-length": contentLength, "transfer-encoding": transferEncoding, ...headers } = req.headers;
           return headers;
         })(),
-        "X-Request-ID": (req as any).id,
+        "X-Request-ID": (req as any).id || "gateway-internal",
       },
-      validateStatus: (status: number) => status < 600, 
+      validateStatus: (status: number) => true,
     };
 
     const response: any = await breaker.fire(options);
 
-    if (response.headers && response.headers['set-cookie']) {
-      res.setHeader('Set-Cookie', response.headers['set-cookie']);
+    if (response.headers && response.headers["set-cookie"]) {
+      res.setHeader("Set-Cookie", response.headers["set-cookie"]);
     }
 
-    res.status(response.status).json(response.data);
-
+    return res.status(response.status).json(response.data);
   } catch (error: any) {
     if (error.response) {
-      res.status(error.response.status).json({
+      return res.status(error.response.status).json({
         success: false,
-        message: "Service error",
-        data: error.response.data
+        message: "BulMQ Service Error",
+        data: error.response.data,
       });
     } else {
-      logger.error("API Gateway Proxy Error (Bulmq):", {
+      logger.error("API Gateway Proxy Error (BulMQ):", {
         message: error.message,
         path: req.originalUrl,
-        requestId: (req as any).id,
       });
-      res.status(503).json({
+      return res.status(503).json({
         success: false,
-        message: "Service unavailable",
+        message: "BulMQ service temporarily unavailable or unreachable",
       });
     }
   }

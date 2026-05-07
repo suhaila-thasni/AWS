@@ -1,10 +1,14 @@
-import { env } from "./env";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 
 const connection = {
-  host: env.REDIS_HOST,
-  port: parseInt(env.REDIS_PORT),
-  username: env.REDIS_USERNAME,
-  password: env.REDIS_PASSWORD,
+  host: process.env.REDIS_HOST,
+  port: Number(process.env.REDIS_PORT),
+  username: process.env.REDIS_USERNAME,
+  password: process.env.REDIS_PASSWORD,
+  tls: {}
 };
-console.log(connection);
+
 export default connection;

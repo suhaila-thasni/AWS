@@ -140,7 +140,11 @@ export const userService = {
     }
 
     const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+<<<<<<< HEAD
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+=======
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId  });
+>>>>>>> a4bf42b (fix)
     const { password: _, ...safeUser } = user.toJSON();
     return { token, refreshToken, user: safeUser };
   },

@@ -25,12 +25,12 @@ ENV NODE_ENV=production
 COPY package*.json .npmrc* ./
 
 # Install only production dependencies
-RUN npm install --omit=dev && rm -f .npmrc
+RUN npm ci --omit=dev && rm -f .npmrc
 
 # Copy compiled code
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/config* ./config/
-COPY --from=builder /app/migrations* ./migrations/
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/.sequelizerc* ./
 
 # Security: run as non-root user

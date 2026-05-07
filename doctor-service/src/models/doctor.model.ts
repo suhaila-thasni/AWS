@@ -284,16 +284,3 @@ Doctor.beforeUpdate(async (doctor: Doctor) => {
 
 
 export default Doctor;
-
-
-
-
-
-
-
-
-
-
-
-
-

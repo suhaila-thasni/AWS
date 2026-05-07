@@ -3,8 +3,9 @@ import { proxyRequest } from "../services/bulmq.service";
 
 const router = express.Router();
 
-// Define the routes that should be handled by the bulmq-service
-router.post("/medicin-task", proxyRequest);
-router.post("/booking-task", proxyRequest);
+// Proxy all /bulmq/* requests to the bulmq-service
+// Exposes: POST /api/bulmq/booking-task
+//          POST /api/bulmq/medicin-task
+router.use("/bulmq", proxyRequest);
 
 export default router;

@@ -40,7 +40,7 @@ router.use("/", reviewRatingRoutes);
 router.use("/", labRoutes);
 router.use("/", adsRoutes); 
 router.use("/", roleRoutes);        
-router.use("/", s3Routes);        
-router.use("/", bulmqRoutes);        
+router.use("/", s3Routes);
+router.use("/", bulmqRoutes);
 export default router;
 

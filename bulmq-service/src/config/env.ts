@@ -9,16 +9,12 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   RABBITMQ_URL: z.string().url(),
   JWT_SECRET: z.string().min(10),
-  REDIS_HOST: z.string().min(1),
-  REDIS_PORT: z.string().min(1),
-  REDIS_USERNAME: z.string().optional(),
-  REDIS_PASSWORD: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("❌ Invalid environment variables in Bulmq Service:");
+  console.error("❌ Invalid environment variables in Booking Service:");
   console.error(parsed.error.format());
   process.exit(1);
 }
