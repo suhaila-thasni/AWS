@@ -1,3 +1,6 @@
+
+
+
 name: CD - Deploy to AWS
 
 on:
@@ -7,25 +10,23 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
+
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+
           script: |
-            # Navigate to project directory
-            cd ~/hostabackend || cd ~/AWS || echo "Project directory not found"
-            
-            # Reset any manual changes on the server to prevent pull conflicts
+            cd ~/AWS
+
             git reset --hard HEAD
-            
-            # Pull latest changes
             git pull origin main
-            
-            # Restart containers (using 'docker compose' instead of 'docker-compose')
+
             sudo docker compose up -d --build
