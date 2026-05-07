@@ -21,8 +21,11 @@ jobs:
             # Navigate to project directory
             cd ~/hostabackend || cd ~/AWS || echo "Project directory not found"
             
+            # Reset any manual changes on the server to prevent pull conflicts
+            git reset --hard HEAD
+            
             # Pull latest changes
             git pull origin main
             
-            # Restart containers with the new changes
-            sudo docker-compose up -d --build
+            # Restart containers (using 'docker compose' instead of 'docker-compose')
+            sudo docker compose up -d --build
