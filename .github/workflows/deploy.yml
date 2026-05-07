@@ -26,7 +26,13 @@ jobs:
           script: |
             cd ~/AWS
 
+            # Reset any local changes and pull latest code
             git reset --hard HEAD
             git pull origin main
 
-            sudo docker compose up -d --build
+            # Restart containers (try new docker compose plugin, fallback to old)
+            if sudo docker compose version > /dev/null 2>&1; then
+              sudo docker compose up -d --build
+            else
+              sudo docker-compose up -d --build
+            fi
