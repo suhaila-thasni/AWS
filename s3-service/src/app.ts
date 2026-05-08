@@ -43,7 +43,7 @@ app.use("/presignurl/login", loginLimiter); // can be changed if logic changes
 
 // CORS
 app.use(cors({
-  origin: ["http://localhost:3000", "https://yourfrontend.com", "http://localhost:5173"], // Allowing local dev and prospective production
+  origin: [  "http://localhost:5173"], // Allowing local dev and prospective production
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));

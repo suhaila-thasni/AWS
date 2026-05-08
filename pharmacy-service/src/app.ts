@@ -29,7 +29,7 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-  origin: ["http://localhost:3000", "https://yourfrontend.com"],
+  origin: ["http://localhost:5173"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));

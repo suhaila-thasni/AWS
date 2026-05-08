@@ -24,6 +24,7 @@ services:
       - role-service  
       - s3-service
       - bulmq-service
+      - socket-service
     networks:
       - hosta-network
 
@@ -195,6 +196,15 @@ services:
     env_file: ./bulmq-service/.env
     networks:
       - hosta-network
+
+  socket-service:
+    container_name: socket-service
+    build: ./socket-service
+    ports:
+      - "3020:3020"
+    networks:
+      - hosta-network
+
 
 networks:
   hosta-network:
