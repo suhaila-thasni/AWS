@@ -53,8 +53,8 @@ router.post("/doctor/logout", logout);
 
 // CRUD
 
-router.get("/doctor", authenticate,checkPermission('doctor','view'), getDoctors);
-router.get("/doctor/:id", authenticate, checkPermission('doctor','view'),getanDoctor);
+router.get("/doctor", getDoctors);
+router.get("/doctor/:id",getanDoctor);
 router.put("/doctor/:id", authenticate, checkPermission('doctor','edit'), updateData);
 router.delete("/doctor/:id", authenticate, checkPermission('doctor','delete'), doctorDelete);
 
