@@ -30,9 +30,9 @@ jobs:
             git reset --hard HEAD
             git pull origin main
 
-            # Restart containers (try new docker compose plugin, fallback to old)
-            if sudo docker compose version > /dev/null 2>&1; then
-              sudo docker compose up -d --build
-            else
-              sudo docker-compose up -d --build
-            fi
+            # Build services sequentially to avoid OOM crashes on low-resource EC2
+            SERVICES=$(sudo docker compose config --services)
+            for service in $SERVICES; do
+              sudo docker compose build $service
+            done
+            sudo docker compose up -d
