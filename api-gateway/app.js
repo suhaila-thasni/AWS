@@ -19,6 +19,9 @@ const createProxy = (target) => (0, http_proxy_middleware_1.createProxyMiddlewar
 app.use("/ambulance", createProxy("http://ambulance-service:3001"));
 app.use("/doctor", createProxy("http://doctor-service:3004"));
 app.use("/staff", createProxy("http://staff-service:3006"));
+app.use("/hospital", createProxy("http://hospital-service:3008"));
+app.use("/booking", createProxy("http://booking-service:3010"));
+app.use("/prescription", createProxy("http://user-service:3009"));
 
 
 
