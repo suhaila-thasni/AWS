@@ -13,7 +13,7 @@ import { sendEmail } from "../services/mail.service";
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false,
+    secure: true,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     // sameSite:"lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
