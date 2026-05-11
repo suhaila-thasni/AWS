@@ -8,6 +8,8 @@ import { env } from "./config/env";
 import { requestLogger } from "./middleware/logger.middleware";
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 // Security middleware
 app.use(helmet({
