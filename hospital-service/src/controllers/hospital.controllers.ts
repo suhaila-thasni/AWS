@@ -14,12 +14,13 @@ const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    // sameSite:"lax",
+    sameSite: "none" ,
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
   });
 };
+
+
 
 
 const APPLE_TEST_NUMBER = "9999999999";
