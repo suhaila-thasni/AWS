@@ -29,7 +29,7 @@ app.use(limiter);
 
 // CORS
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5173","https://hostahospital.com"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
