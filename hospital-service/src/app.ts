@@ -19,27 +19,27 @@ app.use(helmet());
 // Request Tracking & Logging
 app.use(requestLogger);
 
-// // Rate limiting
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // Reduced from 1000 to production-typical 100
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Reduced from 1000 to production-typical 100
 
-//   message: {
-//     success: false,
-//     message: "Too many requests from this IP, please try again later.",
-//     error: { code: "RATE_LIMIT_EXCEEDED", details: null }
-//   }
-// });
-// app.use(limiter);
+  message: {
+    success: false,
+    message: "Too many requests from this IP, please try again later.",
+    error: { code: "RATE_LIMIT_EXCEEDED", details: null }
+  }
+});
+app.use(limiter);
 
 
 // Specific limit for login
-// const loginLimiter = rateLimit({
-//     windowMs: 15 * 60 * 1000,
-//     max: 5,
-//     message: "Too many login attempts, please try again after 15 minutes."
-// });
-// app.use("/hospital/login", loginLimiter); // can be changed if logic changes
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: "Too many login attempts, please try again after 15 minutes."
+});
+app.use("/hospital/login", loginLimiter); // can be changed if logic changes
 
 // CORS
 app.use(cors({
