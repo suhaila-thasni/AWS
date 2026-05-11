@@ -57,8 +57,8 @@ router.post("/hospital/notify/email", authenticate, validate(sendCustomEmailSche
 
 router.get("/hospital",  getHospital);
 router.get("/hospital/:id",  getanHospital);
-router.put("/hospital/:id",authenticate, checkPermission("hospital", "edit"), updateData);
-router.delete("/hospital/:id",authenticate, checkPermission("hospital", "delete"), hospitalDelete);
+router.put("/hospital/:id",authenticate, updateData);
+router.delete("/hospital/:id",authenticate, hospitalDelete);
 
 export default router;
 
