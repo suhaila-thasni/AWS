@@ -89,10 +89,6 @@
 
 
 
-
-
-
-
 import express, { Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -128,12 +124,18 @@ app.use(
 app.use(requestLogger);
 
 /**
- * GENERAL RATE LIMITER
+ * BODY PARSER
+ */
+app.use(express.json({ limit: "10mb" }));
+
+/**
+ * GENERAL API LIMITER
+ * Mild protection against spam / DDoS
  */
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
 
-    max: 1000,
+    max: 10000,
 
     standardHeaders: true,
 
@@ -141,6 +143,7 @@ const limiter = rateLimit({
 
     message: {
         success: false,
+
         message:
             "Too many requests from this IP, please try again later.",
 
@@ -152,14 +155,17 @@ const limiter = rateLimit({
 });
 
 /**
- * APPLY ONLY TO APIs
+ * APPLY GENERAL LIMITER
  */
 app.use("/api", limiter);
 
 /**
- * LOGIN LIMITER
+ * PROFESSIONAL LOGIN LIMITER
+ * Based on:
+ * IP + Email
  */
 const loginLimiter = rateLimit({
+
     windowMs: 15 * 60 * 1000,
 
     max: 5,
@@ -168,10 +174,31 @@ const loginLimiter = rateLimit({
 
     legacyHeaders: false,
 
+    /**
+     * KEY GENERATOR
+     * Creates unique key per:
+     * IP + Email
+     */
+    keyGenerator: (req: any) => {
+
+        const email =
+            req.body?.email ||
+            req.body?.phone ||
+            "unknown";
+
+        return `${req.ip}-${email}`;
+    },
+
     message: {
         success: false,
+
         message:
-            "Too many login attempts, please try again after 15 minutes.",
+            "Too many login attempts. Please try again after 15 minutes.",
+
+        error: {
+            code: "LOGIN_RATE_LIMIT_EXCEEDED",
+            details: null,
+        },
     },
 });
 
@@ -179,9 +206,13 @@ const loginLimiter = rateLimit({
  * LOGIN ROUTES
  */
 app.use("/api/users/login", loginLimiter);
+
 app.use("/api/ambulance/login", loginLimiter);
+
 app.use("/api/doctor/login", loginLimiter);
+
 app.use("/api/staff/login", loginLimiter);
+
 app.use("/api/hospital/login", loginLimiter);
 
 /**
@@ -191,7 +222,9 @@ app.use(
     cors({
         origin: [
             "http://localhost:5173",
+
             "https://hostahospital.com",
+
             "https://www.hostahospital.com",
         ],
 
@@ -214,19 +247,19 @@ app.use(
 );
 
 /**
- * BODY PARSER
- */
-app.use(express.json({ limit: "10mb" }));
-
-/**
- * HEALTH
+ * HEALTH CHECK
  */
 app.get("/health", (req: Request, res: Response) => {
+
     res.status(200).json({
         status: "healthy",
+
         service: "api-gateway",
+
         timestamp: new Date().toISOString(),
+
         uptime: process.uptime(),
+
         environment: env.NODE_ENV,
     });
 });
