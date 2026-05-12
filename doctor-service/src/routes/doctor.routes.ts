@@ -33,6 +33,8 @@ import { check } from "zod";
 
 const router = Router();
 
+
+
 // Auth
 router.post("/doctor", authenticate, validate(registerDoctorSchema),checkPermission('doctor','create') , Registeration);
 router.post("/doctor/login", validate(loginDoctorSchema), login);
