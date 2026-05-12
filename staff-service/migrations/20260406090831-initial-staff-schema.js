@@ -64,6 +64,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
+        imageUrl: {
+      type: DataTypes.STRING,
+       allowNull: true
+    },
       isDelete: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
@@ -72,6 +76,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       },
+      
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
