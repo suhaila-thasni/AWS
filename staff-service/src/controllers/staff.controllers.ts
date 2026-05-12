@@ -86,46 +86,28 @@ import { httpClient } from "../utils/httpClient";
 // REGISTER - POST /staff/register                             
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   
-  const { hospitalId: bodyHospitalId, name, phone, email, password,  designation, joiningDate, jobType, staffType,  dob, gender, knowLanguages, qualification, address } = req.body;
+  const { hospitalId, name, phone, email, password,  designation, joiningDate, jobType, staffType,  dob, gender, knowLanguages, qualification, address } = req.body;
 
-  const tokenHospitalId = req.user?.id;
-  const authHeader = req.headers.authorization;
 
-  // 1. Security Check: If hospitalId is provided in body, it must match the token ID
-  if (bodyHospitalId && Number(bodyHospitalId) !== Number(tokenHospitalId)) {
-    res.status(403).json({
-      success: false,
-      message: "Security violation: The provided hospitalId does not match your authenticated account.",
-      error: { code: "HOSPITAL_ID_MISMATCH" }
+
+  // 2. Validate hospitalId via hospital-service
+  try {
+
+    const hospitalResponse = await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
+      headers: { Authorization: req.headers.authorization }
+    });
+    if (!hospitalResponse.data || !hospitalResponse.data.success) {
+      res.status(400).json({ success: false, message: "Invalid hospital ID" });
+      return;
+    }
+  } catch (error) {
+    res.status(404).json({ 
+      success: false, 
+      message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
+      error: { code: "HOSPITAL_NOT_FOUND" }
     });
     return;
   }
-
-  const hospitalId = tokenHospitalId; // Source of truth
-
-  if (!hospitalId) {
-    res.status(400).json({ success: false, message: "Hospital ID is required" });
-    return;
-  }
-
-  // 2. Validate hospitalId via hospital-service
-  // try {
-
-  //   const hospitalResponse = await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
-  //     headers: { Authorization: authHeader }
-  //   });
-  //   if (!hospitalResponse.data || !hospitalResponse.data.success) {
-  //     res.status(400).json({ success: false, message: "Invalid hospital ID" });
-  //     return;
-  //   }
-  // } catch (error) {
-  //   res.status(404).json({ 
-  //     success: false, 
-  //     message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
-  //     error: { code: "HOSPITAL_NOT_FOUND" }
-  //   });
-  //   return;
-  // }
 
   const phoneExists = await Staff.findOne({ where: { phone } });
   if (phoneExists) {
@@ -157,7 +139,6 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     await publishEvent("staff_events", "STAFF_REGISTERED", {
       staffId: newStaff.id,
       phone: newStaff.phone,
-      hospitalId: newStaff.hospitalId
     });
 
     res.status(201).json({
@@ -176,6 +157,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     }
   }
 });
+
 
 // LOGIN - POST /staff/login
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
