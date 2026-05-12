@@ -499,31 +499,39 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
 });
 
 // GET ALL - GET /hospital 
-export const getHospital: any = asyncHandler(async (req: Request, res: Response) => {
+export const getHospital = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-     const { type } : any = req.query;
+  const { type }: any = req.query;
 
-      const hospital = await Hospital.findAll({
-      where: type,
-    });
+  const whereClause: any = {};
+
+  // only apply filter if type is provided
+  if (type) {
+    whereClause.type = {
+      [Op.iLike]: type, 
+    };
+  }
+
+  const hospital = await Hospital.findAll({
+    where: whereClause,
+  });
 
   if (hospital.length === 0) {
-    res.status(404).json({
+  res.status(404).json({
       success: false,
       message: "No data found",
       data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
     });
-    return;
+      return;
   }
 
-  res.status(200).json({
+   res.status(200).json({
     success: true,
-    status: "Success",
     data: hospital,
-    error: null,
   });
+    return;
 });
+
 
 // REFRESH TOKEN - POST /hospital/refresh
 export const refreshHospitalToken: any = asyncHandler(async (req: Request, res: Response) => {
