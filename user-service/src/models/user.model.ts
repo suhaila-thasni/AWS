@@ -8,7 +8,7 @@ interface IUser {
   email: string;
   password?: string;
   phone?: string;
-  imageUrl?: any;
+  imageUrl?: string;
   fcmToken?: string;
    joinAccountId?:number;
    relationType?:string;
@@ -25,7 +25,7 @@ class User extends Model<IUser> implements IUser {
   public email!: string;
   public password!: string;
   public phone!: string;
-  public imageUrl!: any;
+  public imageUrl!: string;
   public fcmToken!: string;
   public relationType!:string;
   public otp?: string;
@@ -91,7 +91,7 @@ User.init(
     },
 
     imageUrl: {
-      type: DataTypes.JSONB, // 🔥 store imageUrl + public_id
+      type: DataTypes.STRING, // 🔥 store imageUrl + public_id
     },
     
         roleId: {
