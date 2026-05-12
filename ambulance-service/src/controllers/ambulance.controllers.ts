@@ -8,17 +8,6 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Helper to set refresh token cookie
-const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: "/",
-  });
-};
-
 const APPLE_TEST_NUMBER = "9999999999";
 const APPLE_TEST_OTP = "123456";
 
@@ -178,11 +167,6 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   const token = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance" }, jwtKey, {
     expiresIn: "15m"
   });
-  const refreshToken = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance" }, jwtKey, {
-    expiresIn: "2w"
-  });
-
-  setRefreshTokenCookie(res, refreshToken);
 
   const ambulanceJson = ambulance.toJSON();
   
@@ -313,53 +297,3 @@ export const getAmbulaces: any = asyncHandler(async (req: Request, res: Response
     error: null,
   });
 });
-
-// // REFRESH TOKEN - POST /ambulance/refresh
-// export const refreshAmbulanceToken: any = asyncHandler(async (req: Request, res: Response) => {
-//   const refreshToken = req.cookies?.refreshToken;
-
-//   if (!refreshToken) {
-//     res.status(401).json({ success: false, message: "Refresh token missing" });
-//     return;
-//   }
-
-//   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-
-//   try {
-//     const decoded: any = jwt.verify(refreshToken, jwtKey);
-    
-//     const ambulance = await Ambulance.findByPk(decoded.id);
-
-//     if (!ambulance) {
-//       res.status(401).json({ success: false, message: "Invalid refresh token" });
-//       return;
-//     }
-
-//     const newToken = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance", roleId: ambulance.roleId }, jwtKey, {
-//       expiresIn: "15m",
-//     });
-//     const newRefreshToken = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance", roleId: ambulance.roleId }, jwtKey, {
-//       expiresIn: "7d",
-//     });
-
-//     setRefreshTokenCookie(res, newRefreshToken);
-
-//     res.status(200).json({
-//       success: true,
-//       token: newToken,
-//     });
-//   } catch (error) {
-//     res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
-//   }
-// });
-
-// // LOGOUT - POST /ambulance/logout
-// export const logout: any = asyncHandler(async (req: Request, res: Response) => {
-//   res.clearCookie("refreshToken", {
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV === "production",
-//     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-//     path: "/",
-//   });
-//   res.status(200).json({ success: true, message: "Logged out successfully" });
-// });
