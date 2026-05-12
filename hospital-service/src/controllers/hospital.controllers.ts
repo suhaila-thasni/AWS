@@ -499,38 +499,46 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
 });
 
 // GET ALL - GET /hospital 
+
 export const getHospital = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  const { type }: any = req.query;
+  let { type }: any = req.query;
+
+  // ✅ FIX: convert array → string
+  if (Array.isArray(type)) {
+    type = type[0];
+  }
+
+  // ✅ FIX: ensure string
+  type = type?.toString();
 
   const whereClause: any = {};
 
-  // only apply filter if type is provided
   if (type) {
     whereClause.type = {
-      [Op.iLike]: type, 
+      [Op.iLike]: type,
     };
   }
-  
 
   const hospital = await Hospital.findAll({
     where: whereClause,
   });
 
   if (hospital.length === 0) {
-  res.status(404).json({
+     res.status(404).json({
       success: false,
       message: "No data found",
       data: null,
     });
-      return;
+
+    return;
   }
 
-   res.status(200).json({
+  res.status(200).json({
     success: true,
     data: hospital,
   });
-    return;
+  return;
 });
 
 
