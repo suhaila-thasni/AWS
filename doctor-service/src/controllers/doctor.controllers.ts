@@ -63,42 +63,24 @@ export const sendDoctorOtpEmail = async (email: string, otp: string, doctorName:
 };
 
 // REGISTER - POST /doctor/register
+
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { hospitalId: bodyHospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
+  const { hospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
   consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting } = req.body;
 
-  const tokenHospitalId = req.user?.id;
-  const authHeader = req.headers.authorization;
-
-  // 1. Security Check: hospitalId in body must match token ID
-  if (bodyHospitalId && Number(bodyHospitalId) !== Number(tokenHospitalId)) {
-    res.status(403).json({
-      success: false,
-      message: "Security violation: The provided hospitalId does not match your authenticated account.",
-      error: { code: "HOSPITAL_ID_MISMATCH" }
-    });
-    return;
-  }
-
-  const hospitalId = tokenHospitalId; // Source of truth
-
-  if (!hospitalId) {
-    res.status(400).json({ success: false, message: "Hospital ID is required" });
-    return;
-  }
 
   // 2. Validate hospitalId via hospital-service
   try {
     const hospitalResponse = await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
-      headers: { Authorization: authHeader }
+      headers: { Authorization: req.headers.authorization }
     });
     if (!hospitalResponse.data || !hospitalResponse.data.success) {
       res.status(400).json({ success: false, message: "Invalid hospital ID" });
       return;
     }
   } catch (error) {
-    res.status(404).json({
-      success: false,
+    res.status(404).json({ 
+      success: false, 
       message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
       error: { code: "HOSPITAL_NOT_FOUND" }
     });
@@ -143,7 +125,6 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
   await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
     doctorId: newDoctor.id,
     phone: newDoctor.phone,
-    hospitalId: newDoctor.hospitalId
   });
 
   res.status(201).json({
@@ -153,6 +134,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     error: null,
   });
 });
+
 
 // LOGIN - POST /doctor/login
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
