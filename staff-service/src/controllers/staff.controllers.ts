@@ -109,23 +109,23 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
   }
 
   // 2. Validate hospitalId via hospital-service
-  try {
+  // try {
 
-    const hospitalResponse = await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
-      headers: { Authorization: authHeader }
-    });
-    if (!hospitalResponse.data || !hospitalResponse.data.success) {
-      res.status(400).json({ success: false, message: "Invalid hospital ID" });
-      return;
-    }
-  } catch (error) {
-    res.status(404).json({ 
-      success: false, 
-      message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
-      error: { code: "HOSPITAL_NOT_FOUND" }
-    });
-    return;
-  }
+  //   const hospitalResponse = await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
+  //     headers: { Authorization: authHeader }
+  //   });
+  //   if (!hospitalResponse.data || !hospitalResponse.data.success) {
+  //     res.status(400).json({ success: false, message: "Invalid hospital ID" });
+  //     return;
+  //   }
+  // } catch (error) {
+  //   res.status(404).json({ 
+  //     success: false, 
+  //     message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
+  //     error: { code: "HOSPITAL_NOT_FOUND" }
+  //   });
+  //   return;
+  // }
 
   const phoneExists = await Staff.findOne({ where: { phone } });
   if (phoneExists) {
