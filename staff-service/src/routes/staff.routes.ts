@@ -62,11 +62,9 @@ router.put("/staff/auth/change-password", validate(changePasswordSchema),changeS
 
 
 // CRUD
-<<<<<<< HEAD
+
 router.get("/staff",getStaffs);
-=======
-router.get("/staff",authenticate, getStaffs);
->>>>>>> a4bf42b (fix)
+
 router.get("/staff/:id", validateParams(idParamSchema),getanStaff);
 router.put("/staff/:id", validateParams(idParamSchema), validate(updateStaffSchema), updateData);
 router.delete("/staff/:id", validateParams(idParamSchema), staffDelete);
