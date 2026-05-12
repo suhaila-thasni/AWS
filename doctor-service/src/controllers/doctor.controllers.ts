@@ -393,26 +393,42 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 
 
 // GET ALL - GET /doctor
-export const getDoctors: any = asyncHandler(async (req: Request, res: Response) => {
-  const doctor = await Doctor.findAll();
+export const getDoctors = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
 
-  if (doctor.length === 0) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
+    let { id }: any = req.query;
+
+    // array safety
+    if (Array.isArray(id)) {
+      id = id[0];
+    }
+
+    const whereClause: any = {};
+
+    // integer filter
+    if (id) {
+      whereClause.hospitalId = Number(id);
+    }
+
+    const doctor = await Doctor.findAll({
+      where: whereClause,
     });
-    return;
-  }
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: doctor,
-    error: null,
-  });
-});
+    if (doctor.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        data: null,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: doctor,
+    });
+  }
+);
 
 // CHANGE PASSWORD - PUT /doctor/password
 export const changepassword: any = asyncHandler(async (req: Request, res: Response) => {
