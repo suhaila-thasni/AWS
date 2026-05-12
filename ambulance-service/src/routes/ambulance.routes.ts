@@ -7,8 +7,8 @@ import {
   updateData,
   ambulanceDelete,
   getAmbulaces,
-  refreshAmbulanceToken,
-  logout
+  // refreshAmbulanceToken,
+  // logout
 } from "../controllers/ambulance.controllers";
 import { validate, validateParams } from "../middleware/validate.middleware";
 import {
@@ -27,8 +27,8 @@ const router = Router();
 router.post("/ambulance", authenticate, validate(registerSchema), Registeration);
 router.post("/ambulance/login/phone", validate(loginWithPhoneSchema), loginWithPhone);
 router.post("/ambulance/otp", validate(verifyOtpSchema), verifyOtp);
-router.post("/ambulance/refresh", refreshAmbulanceToken);
-router.post("/ambulance/logout", logout);
+// router.post("/ambulance/refresh", refreshAmbulanceToken);
+// router.post("/ambulance/logout", logout);
 
 // CRUD
 router.get("/ambulance", getAmbulaces);

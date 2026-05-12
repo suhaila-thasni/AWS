@@ -3,6 +3,6 @@ import { proxyRequest } from "../services/blood.service";
 
 const router = express.Router();
 
-router.use("/blood", proxyRequest);
+router.use("/donors", proxyRequest);
 
 export default router;

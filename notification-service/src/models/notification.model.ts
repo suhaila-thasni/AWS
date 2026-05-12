@@ -147,3 +147,4 @@ Notification.init(
 );
 
 export default Notification;
+

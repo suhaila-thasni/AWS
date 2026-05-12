@@ -29,6 +29,7 @@ class Ambulance extends Model<IAmbulance> implements IAmbulance {
   public otp!: string;
   public otpExpiry!: Date;
   public userId!: number;
+  
 }
 
 Ambulance.init(
@@ -73,6 +74,7 @@ Ambulance.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+  
   },
   {
     sequelize,

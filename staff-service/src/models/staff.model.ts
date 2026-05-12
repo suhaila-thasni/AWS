@@ -35,8 +35,8 @@ interface IStaff {
   isDelete?: boolean;
   otp?: string;
   otpExpiry?: Date;
-  roleId: number; 
-  imageUrl?: string;
+  roleId: number;
+   imageUrl: string;
 }
 
 /* =======================
@@ -92,8 +92,8 @@ class Staff
   public isDelete?: boolean;
   public otp?: string;
   public otpExpiry?: Date;
-  public roleId!: number; 
-  public imageUrl?: string;  
+  public roleId!: number;
+   public imageUrl: string;
 
   // timestamps 
   public readonly createdAt!: Date;
@@ -219,9 +219,9 @@ Staff.init(
     otpExpiry: {
       type: DataTypes.DATE,
     },
-    imageUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
+         imageUrl: {
+      type: DataTypes.STRING, // 🔥 store imageUrl + public_id
+       allowNull: true
     },
    
   },
