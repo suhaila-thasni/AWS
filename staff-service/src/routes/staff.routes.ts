@@ -63,11 +63,7 @@ router.put("/staff/auth/change-password", validate(changePasswordSchema),changeS
 
 // CRUD
 
-router.get("/staff",authenticate,getStaffs);
 
-router.get("/staff/:id",authenticate, validateParams(idParamSchema),getanStaff);
-router.put("/staff/:id",authenticate, validateParams(idParamSchema), validate(updateStaffSchema), updateData);
-router.delete("/staff/:id",authenticate, validateParams(idParamSchema), staffDelete);
 
 router.get("/staff",getStaffs);
 
