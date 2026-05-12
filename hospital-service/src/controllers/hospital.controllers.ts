@@ -511,6 +511,7 @@ export const getHospital = asyncHandler(async (req: Request, res: Response): Pro
       [Op.iLike]: type, 
     };
   }
+  
 
   const hospital = await Hospital.findAll({
     where: whereClause,
