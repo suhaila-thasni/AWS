@@ -475,26 +475,43 @@ export const staffDelete: any = asyncHandler(async (req: Request, res: Response)
 });
 
 // GET ALL - GET /staff
-export const getStaffs: any = asyncHandler(async (req: Request, res: Response) => {
-  const staff = await Staff.findAll();
+export const getStaffs = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+
+  let { id }: any = req.query;
+
+  // ✅ FIX: convert array → string
+  if (Array.isArray(id)) {
+    id = id[0];
+  }
+
+  const whereClause: any = {};
+
+   // integer filter
+    if (id) {
+      whereClause.hospitalId = Number(id);
+    }
+
+  const staff = await Staff.findAll({
+    where: whereClause,
+  });
 
   if (staff.length === 0) {
-    res.status(404).json({
+     res.status(404).json({
       success: false,
       message: "No data found",
       data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
     });
+
     return;
   }
 
   res.status(200).json({
     success: true,
-    status: "Success",
     data: staff,
-    error: null,
   });
+  return;
 });
+
 
 // CHANGE PASSWORD - PUT /staff/changepassword
 export const changepassword: any = asyncHandler(async (req: Request, res: Response) => {
