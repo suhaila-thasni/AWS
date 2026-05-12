@@ -20,7 +20,7 @@ breaker.fallback(() => {
 
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const url = `${SERVICES.BLOOD_SERVICE}${req.originalUrl.replace("/api/blood", "")}`;
+    const url = `${SERVICES.BLOOD_SERVICE}${req.originalUrl.replace("/api/donors", "/donors")}`;
 
     const options = {
       method: req.method,
