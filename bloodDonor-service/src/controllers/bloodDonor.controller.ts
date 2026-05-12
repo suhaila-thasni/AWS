@@ -3,10 +3,11 @@ import { Op } from "sequelize";
 import asyncHandler from "express-async-handler";
 import BloodDonor from "../models/bloodDonor.model";
 import { publishEvent } from "../events/publisher";
-import { generateToken } from "../services/jwt.service";
 import twilio from "twilio";
 import { httpClient } from "../utils/httpClient";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -64,8 +65,7 @@ export const createDonor: any = asyncHandler(async (req: any, res: Response) => 
 
   // 2. Validate User Existence (Cross-Service: user-service)
   try {
-    console.log(`Verifying user at: http://user-service:3002/users/${userId}`);
-    await httpClient.get(`http://user-service:3002/users/${userId}`, {
+    await httpClient.get(`{process.env.USER_SERVICE_URL}/users/${userId}`, {
       headers: { Authorization: authHeader }
     });
   } catch (error: any) {
@@ -230,7 +230,7 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   const token = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
     expiresIn: "15m"
   });
-  const refreshToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
+  const refreshToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
     expiresIn: "2w"
   });
 
@@ -389,7 +389,7 @@ export const refreshBloodDonorToken: any = asyncHandler(async (req: Request, res
     return;
   }
 
-  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
+  const jwtKey = process.env.JWT_SECRET;
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
@@ -401,7 +401,7 @@ export const refreshBloodDonorToken: any = asyncHandler(async (req: Request, res
       return;
     }
 
-    const newToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
+    const newToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
       expiresIn: "15m",
     });
 
