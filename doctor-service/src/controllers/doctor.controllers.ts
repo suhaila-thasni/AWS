@@ -8,12 +8,14 @@ import { Op } from "sequelize";
 import twilio from "twilio";
 import axios from "axios";
 import { sendEmail } from "../services/mail.service";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
@@ -62,7 +64,8 @@ export const sendDoctorOtpEmail = async (email: string, otp: string, doctorName:
 
 // REGISTER - POST /doctor/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { hospitalId: bodyHospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages, consulting, bookingOpen, qualification, address, displayName, outDoorConsulting } = req.body;
+  const { hospitalId: bodyHospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
+  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting } = req.body;
 
   const tokenHospitalId = req.user?.id;
   const authHeader = req.headers.authorization;
@@ -86,7 +89,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
 
   // 2. Validate hospitalId via hospital-service
   try {
-    const hospitalResponse = await axios.get(`http://hospital-service:3009/hospital/${hospitalId}`, {
+    const hospitalResponse = await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
       headers: { Authorization: authHeader }
     });
     if (!hospitalResponse.data || !hospitalResponse.data.success) {
@@ -126,7 +129,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
    dob, 
    gender, 
    knowLanguages, 
-   consulting, 
+  consultingTwo,
+  consultingOne,
    bookingOpen, 
    qualification, 
    address, 
@@ -193,14 +197,14 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
   // Remove password and OTP fields from response
   const { password: _, otp: __, otpExpiry: ___, ...safeDoctor } = doctor.get();
 
-  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -280,13 +284,13 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   await doctor.update({ otp: null, otpExpiry: null });
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
   const { password: _, otp: __, otpExpiry: ___, ...safeDoctor } = doctor.get();
 
-  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -503,11 +507,11 @@ export const verifyDoctorOtp: any = asyncHandler(async (req: Request, res: Respo
   await doctor.update({ otp: null, otpExpiry: null });
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const token = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
-  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -586,7 +590,7 @@ export const refreshDoctorToken: any = asyncHandler(async (req: Request, res: Re
       return;
     }
 
-    const newToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId }, jwtKey, {
+    const newToken = jwt.sign({ id: doctor.id, name: `${doctor.firstName} ${doctor.lastName}`, role: "doctor", roleId: doctor.roleId, isRefresh: false }, jwtKey, {
       expiresIn: "15m",
     });
 
