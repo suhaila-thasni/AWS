@@ -75,12 +75,7 @@ BloodDonor.init(
     otpExpiry: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-    roleId: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-      allowNull: true,
-    },
+    }
   },
   {
     sequelize,
