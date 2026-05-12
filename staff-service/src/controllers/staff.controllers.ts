@@ -9,6 +9,9 @@ import Staff from "../models/staff.model";
 import { publishEvent } from "../events/publisher";
 import { sendEmail } from "../services/mail.service";
 import { logger } from "../utils/logger";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -23,6 +26,7 @@ const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
 
 const APPLE_TEST_NUMBER = "9999999999";
 const APPLE_TEST_OTP = "123456";
+
 
 export const sendStaffOtpEmail = async (email: string, otp: string, staffName: string) => {
   const html = `
@@ -105,7 +109,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
 
   // 2. Validate hospitalId via hospital-service
   try {
-    const hospitalResponse = await httpClient.get(`http://hospital-service:3009/hospital/${hospitalId}`, {
+
+    const hospitalResponse = await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
       headers: { Authorization: authHeader }
     });
     if (!hospitalResponse.data || !hospitalResponse.data.success) {
@@ -223,12 +228,12 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Generate JWT tokens
-  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, {
+  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
   const refreshToken = jwt.sign(
-    { id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId },
+    { id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: true },
     jwtKey,
     { expiresIn: "2w" }
   );
@@ -335,8 +340,8 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
     return;
   }
 
-  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, { expiresIn: "15m" });
-  const refreshToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, { expiresIn: "2w" });
+  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: false }, jwtKey, { expiresIn: "15m" });
+  const refreshToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: true }, jwtKey, { expiresIn: "2w" });
 
   // Save refresh token to Redis (REMOVED)
 
@@ -391,7 +396,9 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   // Validate hospitalId if it's being updated
   if (updatePayload.hospitalId) {
     try {
-      const hospitalResponse = await axios.get(`http://hospital-service:3009/hospital/${updatePayload.hospitalId}`);
+
+      const hospitalResponse = await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${updatePayload.hospitalId}`);
+
       if (!hospitalResponse.data || !hospitalResponse.data.success) {
         res.status(400).json({ success: false, message: "Invalid hospital ID" });
         return;
@@ -505,7 +512,9 @@ export const changepassword: any = asyncHandler(async (req: Request, res: Respon
 
   // If password is provided, verify it first (like user service)
   if (password) {
-    const isMatch = await bcrypt.compare(password, staff.password || "");
+
+    const isMatch = await bcrypt.compare(password, staff.password);
+
     if (!isMatch) {
       res.status(401).json({
         success: false,
@@ -593,11 +602,12 @@ export const verifyStaffOtp: any = asyncHandler(async (req: Request, res: Respon
   // Clear OTP after successful verification
   await staff.update({ otp: null, otpExpiry: null });
 
-  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, {
+
+  const jwtKey = process.env.JWT_SECRET;
+  const token = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
-  const refreshToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -664,7 +674,8 @@ export const refreshStaffToken: any = asyncHandler(async (req: Request, res: Res
     return;
   }
 
-  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
+
+  const jwtKey = process.env.JWT_SECRET;
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
@@ -678,7 +689,7 @@ export const refreshStaffToken: any = asyncHandler(async (req: Request, res: Res
       return;
     }
 
-    const newToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId }, jwtKey, {
+    const newToken = jwt.sign({ id: staff.id, name: staff.name, role: "staff", roleId: staff.roleId, isRefresh: false }, jwtKey, {
       expiresIn: "15m",
     });
 
