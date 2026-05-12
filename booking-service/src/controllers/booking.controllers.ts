@@ -7,11 +7,30 @@ import axios from "axios";
 
 // REGISTER - POST /boooking/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
+  console.log("DEBUG: Incoming Booking Body:", req.body);
   const {
     patient_dob, patient_name, patient_place, patient_phone,
     userId: bodyUserId, hospitalId, doctorId,
     booking_date, consulting_time, status
   } = req.body;
+
+  // 0. Validation: Ensure required fields are present
+  if (!patient_name || !patient_phone || !doctorId || !hospitalId || !booking_date || !consulting_time) {
+    res.status(400).json({
+      success: false,
+      message: "Missing required fields.",
+      receivedBody: req.body, // This will show us what the server actually got
+      missing: {
+        patient_name: !patient_name,
+        patient_phone: !patient_phone,
+        doctorId: !doctorId,
+        hospitalId: !hospitalId,
+        booking_date: !booking_date,
+        consulting_time: !consulting_time
+      }
+    });
+    return;
+  }
 
   const tokenUserId = req.user.id;
   const authHeader = req.headers.authorization;
@@ -78,11 +97,19 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     booking_date, consulting_time, status
   });
 
-  await publishEvent("booking_events", "BOOKING_REGISTERED", {
-    bookingId: newbooking.id,
-  });
-
-
+  try {
+    await publishEvent("booking_events", "BOOKING_REGISTERED", {
+      bookingId: newbooking.id,
+      patient_name: newbooking.patient_name,
+      userId: newbooking.userId,
+      hospitalId: newbooking.hospitalId,
+      doctorId: newbooking.doctorId
+    });
+    console.log("✅ Published BOOKING_REGISTERED event for userId:", newbooking.userId);
+  } catch (err) {
+    console.error("Failed to publish booking event:", err);
+    // We don't return 500 here because the booking is already saved in DB
+  }
 
   res.status(201).json({
     success: true,
@@ -91,8 +118,6 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     error: null,
   });
 });
-
-
 
 // GET ONE - GET /booking/:id
 export const getanBooking: any = asyncHandler(async (req: Request, res: Response) => {
@@ -140,18 +165,26 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   // ✅ Get updated booking object
   const updatedBooking = booking[1][0];
 
-  await publishEvent("booking_events", "BOOKING_UPDATED", {
-    bookingId: updatedBooking.id,
-  });
+  try {
+    await publishEvent("booking_events", "BOOKING_UPDATED", {
+      bookingId: updatedBooking.id,
+    });
+  } catch (err) {
+    console.error("Failed to publish update event:", err);
+  }
 
-  // ✅ Use correct values
-  await axios.post('http://localhost:3008/booking-task', {
-    patient_phone: updatedBooking.patient_phone,
-    doctorId: updatedBooking.doctorId,
-    status: updatedBooking.status,
-    consulting_time: updatedBooking.consulting_time,
-    message: `Booking ${updatedBooking.status}`
-  });
+  // ✅ Use correct values (Service name instead of localhost)
+  try {
+    await axios.post('http://speciality-service:3008/booking-task', {
+      patient_phone: updatedBooking.patient_phone,
+      doctorId: updatedBooking.doctorId,
+      status: updatedBooking.status,
+      consulting_time: updatedBooking.consulting_time,
+      message: `Booking ${updatedBooking.status}`
+    });
+  } catch (err) {
+    console.error("Failed to call speciality-service:", err);
+  }
 
   res.status(200).json({
     success: true,
@@ -180,6 +213,11 @@ export const bookingDelete: any = asyncHandler(async (req: Request, res: Respons
   await Booking.destroy({
     where: { id: id }
   });
+
+  await publishEvent("booking_events", "BOOKING_CANCELLED", {
+    bookingId: id,
+  });
+
 
 
   res.status(200).json({

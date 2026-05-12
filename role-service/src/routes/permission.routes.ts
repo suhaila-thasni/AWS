@@ -24,7 +24,6 @@ router.put("/permission/:id", authenticate, updateData);
 router.delete("/permission/:id", authenticate, permissionDelete);
 router.post(
   "/check-permission",
-  authenticate,
   checkPermissionService
 );
 

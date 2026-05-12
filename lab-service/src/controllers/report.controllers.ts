@@ -101,6 +101,10 @@ export const reportDelete: any = asyncHandler(async (req: Request, res: Response
     where: { id: id }
   });
 
+  await publishEvent("report_events", "REPORT_CANCELLED", {
+    reportId: id,
+  });
+
 
   res.status(200).json({
     success: true,

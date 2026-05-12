@@ -2,13 +2,25 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Notification from "../models/notification.model";
 import { publishEvent } from "../events/publisher";
+import { Op } from "sequelize";
 
 // CREATE - POST /notification/register
 export const createNotification: any = asyncHandler(async (req: Request, res: Response) => {
-  const { userId, hospitalId, labId, staffId, pharmacyId, doctorId, message } = req.body;
+  const { 
+    userIds, hospitalIds, labIds, staffIds, pharmacyIds, doctorIds, adminIds, superAdminIds, 
+    message 
+  } = req.body;
 
   const newNotification = await Notification.create({
-    userId, hospitalId, labId, staffId, pharmacyId, doctorId, message
+    userIds: userIds || [],
+    hospitalIds: hospitalIds || [],
+    labIds: labIds || [],
+    staffIds: staffIds || [],
+    pharmacyIds: pharmacyIds || [],
+    doctorIds: doctorIds || [],
+    adminIds: adminIds || [],
+    superAdminIds: superAdminIds || [],
+    message
   });
 
   await publishEvent("notification_events", "NOTIFICATION_CREATED", {
@@ -51,15 +63,18 @@ export const getAllUnreadNotifications: any = asyncHandler(async (req: Request, 
   const limit = parseInt(req.query.limit as string) || 20;
   const offset = (page - 1) * limit;
 
+  const numericId = Number(id);
   let whereCondition: any = {};
 
   switch (role) {
-    case "user": whereCondition = { userId: id, userIsRead: false }; break;
-    case "doctor": whereCondition = { doctorId: id, doctorIsRead: false }; break;
-    case "staff": whereCondition = { staffId: id, staffIsRead: false }; break;
-    case "lab": whereCondition = { labId: id, labIsRead: false }; break;
-    case "pharmacy": whereCondition = { pharmacyId: id, pharmacyIsRead: false }; break;
-    case "hospital": whereCondition = { hospitalId: id, hospitalIsRead: false }; break;
+    case "user": whereCondition = { userIds: { [Op.contains]: [numericId] } }; break;
+    case "doctor": whereCondition = { doctorIds: { [Op.contains]: [numericId] } }; break;
+    case "staff": whereCondition = { staffIds: { [Op.contains]: [numericId] } }; break;
+    case "lab": whereCondition = { labIds: { [Op.contains]: [numericId] } }; break;
+    case "pharmacy": whereCondition = { pharmacyIds: { [Op.contains]: [numericId] } }; break;
+    case "hospital": whereCondition = { hospitalIds: { [Op.contains]: [numericId] } }; break;
+    case "superadmin": whereCondition = { superAdminIds: { [Op.contains]: [numericId] } }; break;
+
     default:
       res.status(400).json({ success: false, message: "Invalid role" });
       return;
@@ -93,15 +108,17 @@ export const getAllReadNotifications: any = asyncHandler(async (req: Request, re
   const limit = parseInt(req.query.limit as string) || 20;
   const offset = (page - 1) * limit;
 
+  const numericId = Number(id);
   let whereCondition: any = {};
 
   switch (role) {
-    case "user": whereCondition = { userId: id, userIsRead: true }; break;
-    case "doctor": whereCondition = { doctorId: id, doctorIsRead: true }; break;
-    case "staff": whereCondition = { staffId: id, staffIsRead: true }; break;
-    case "lab": whereCondition = { labId: id, labIsRead: true }; break;
-    case "pharmacy": whereCondition = { pharmacyId: id, pharmacyIsRead: true }; break;
-    case "hospital": whereCondition = { hospitalId: id, hospitalIsRead: true }; break;
+    case "user": whereCondition = { userIds: { [Op.contains]: [numericId] } }; break;
+    case "doctor": whereCondition = { doctorIds: { [Op.contains]: [numericId] } }; break;
+    case "staff": whereCondition = { staffIds: { [Op.contains]: [numericId] } }; break;
+    case "lab": whereCondition = { labIds: { [Op.contains]: [numericId] } }; break;
+    case "pharmacy": whereCondition = { pharmacyIds: { [Op.contains]: [numericId] } }; break;
+    case "hospital": whereCondition = { hospitalIds: { [Op.contains]: [numericId] } }; break;
+    case "superadmin": whereCondition = { superAdminIds: { [Op.contains]: [numericId] } }; break;
     default:
       res.status(400).json({ success: false, message: "Invalid role" });
       return;
@@ -134,12 +151,8 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   const updatePayload = req.body;
 
   // Prevent updating restricted fields
-  delete updatePayload.userId;
-  delete updatePayload.hospitalId;
-  delete updatePayload.doctorId;
-  delete updatePayload.labId;
-  delete updatePayload.staffId;
-  delete updatePayload.pharmacyId;
+  const restrictedFields = ['userIds', 'hospitalIds', 'doctorIds', 'labIds', 'staffIds', 'pharmacyIds', 'adminIds', 'superAdminIds'];
+  restrictedFields.forEach(field => delete updatePayload[field]);
 
   const [affectedCount, updatedNotifications] = await Notification.update(updatePayload, {
     where: { id: id },

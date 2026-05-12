@@ -34,7 +34,7 @@ import { check } from "zod";
 const router = Router();
 
 // Auth
-router.post("/doctor/register", authenticate, validate(registerDoctorSchema),checkPermission('doctor','create') , Registeration);
+router.post("/doctor",authenticate,validate(registerDoctorSchema), Registeration);
 router.post("/doctor/login", validate(loginDoctorSchema), login);
 router.post("/doctor/login/phone", validate(loginWithPhoneSchema), loginWithPhone);
 router.post("/doctor/otp", validate(verifyOtpSchema), verifyOtp);
@@ -53,8 +53,8 @@ router.post("/doctor/logout", logout);
 
 // CRUD
 
-router.get("/doctor", authenticate,checkPermission('doctor','view'), getDoctors);
-router.get("/doctor/:id", authenticate, checkPermission('doctor','view'),getanDoctor);
+router.get("/doctor", getDoctors);
+router.get("/doctor/:id",getanDoctor);
 router.put("/doctor/:id", authenticate, checkPermission('doctor','edit'), updateData);
 router.delete("/doctor/:id", authenticate, checkPermission('doctor','delete'), doctorDelete);
 

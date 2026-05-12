@@ -24,7 +24,7 @@ router.post("/donors/refresh", refreshBloodDonorToken);
 router.post("/donors/logout", logout);
 
 // 🛡️ Protected - Only authenticated users can register as donors
-router.post("/donors/register", authenticate, validate(donorSchema), checkPermission("donors", "create"), createDonor);
+router.post("/donors", authenticate, validate(donorSchema), checkPermission("donors", "create"), createDonor);
 
 // 📋 CRUD Routes
 router.get("/donors",  getDonors);

@@ -35,8 +35,8 @@ module.exports = {
         unique: true,
         allowNull: true
       },
-      picture: {
-        type: Sequelize.JSONB,
+      imageUrl: {
+        type: Sequelize.STRING,
         allowNull: true
       },
       fcmToken: {

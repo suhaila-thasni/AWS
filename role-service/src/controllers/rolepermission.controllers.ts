@@ -31,11 +31,20 @@ export const createRolepermission: any =
 
     const result =
       await Rolepermission.bulkCreate(rolePermissions);
+    await publishEvent(
+  "rolepermission_events",
+  "ROLEPERMISSION_CREATED",
+  {
+    roleId,
+    permissionIds,
+  }
+);
+
 
     res.status(201).json({
       success: true,
       message: "Role permissions assigned",
-      data: result,
+      data: createRolepermission,
     });
 
   });

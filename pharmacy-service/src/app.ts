@@ -1,78 +1,211 @@
-import express, { Request, Response, NextFunction } from "express";
+// import express, { Request, Response, NextFunction } from "express";
+// import cors from "cors";
+// import helmet from "helmet";
+// import pharmacyRoutes from "./routes/pharmacy.routes";
+// import { requestLogger } from "./middleware/logger.middleware";
+// import { logger } from "./utils/logger";
+// import { env } from "./config/env";
+
+// const app = express();
+
+// // Security middleware
+// app.use(helmet());
+
+// // Request Tracking & Logging
+// app.use(requestLogger);
+
+
+
+// // CORS
+// app.use(cors({
+//   origin: ["http://localhost:5173"],
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+//   credentials: true,
+// }));
+
+// app.use(express.json({ limit: "10mb" }));
+// app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// // Health check endpoint
+// app.get("/health", (req: Request, res: Response) => {
+//   res.status(200).json({
+//     status: "healthy",
+//     service: "pharmacy-service",
+//     timestamp: new Date().toISOString(),
+//     uptime: process.uptime(),
+//     environment: env.NODE_ENV
+//   });
+// });
+
+// // ROUTES
+// app.use("/", pharmacyRoutes);
+
+// // 404 handler
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   res.status(404).json({
+//     status: 404,
+//     message: "Requested pharmacy-related resource not found",
+//     path: req.path,
+//   });
+// });
+
+// // Global Error handler with Winston
+// app.use((err: any, req: any, res: Response, next: NextFunction) => {
+//   logger.error("Server error", {
+//     requestId: req.id,
+//     message: err.message,
+//     stack: err.stack,
+//   });
+
+//   res.status(err.status || 500).json({
+//     success: false,
+//     message: "Internal Server Error in Pharmacy Service",
+//     error: env.NODE_ENV === "development" ? err : {},
+//   });
+// });
+
+// export default app;
+
+
+
+
+
+import express, {
+    Request,
+    Response,
+    NextFunction,
+} from "express";
+
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+// import cookieParser from "cookie-parser";
+
 import pharmacyRoutes from "./routes/pharmacy.routes";
+
 import { requestLogger } from "./middleware/logger.middleware";
+
 import { logger } from "./utils/logger";
+
 import { env } from "./config/env";
 
 const app = express();
 
-// Security middleware
+/**
+ * TRUST PROXY
+ */
+app.set("trust proxy", 1);
+
+/**
+ * SECURITY
+ */
 app.use(helmet());
 
-// Request Tracking & Logging
+/**
+ * LOGGER
+ */
 app.use(requestLogger);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Reduced from 1000 to production-typical 100
-  message: {
-    success: false,
-    message: "Too many requests from this IP, please try again later.",
-    error: { code: "RATE_LIMIT_EXCEEDED", details: null }
-  }
-});
-app.use(limiter);
+/**
+ * INTERNAL CORS
+ */
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5173",
+            "https://hostahospital.com",
+        ],
 
-// CORS
-app.use(cors({
-  origin: ["http://localhost:5173"],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-}));
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS",
+        ],
 
+        credentials: true,
+    })
+);
+
+/**
+ * BODY PARSER
+ */
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Health check endpoint
-app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({
-    status: "healthy",
-    service: "pharmacy-service",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: env.NODE_ENV
-  });
-});
+app.use(
+    express.urlencoded({
+        limit: "10mb",
+        extended: true,
+    })
+);
 
-// ROUTES
+// app.use(cookieParser());
+
+/**
+ * ROUTES
+ */
 app.use("/", pharmacyRoutes);
 
-// 404 handler
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.status(404).json({
-    status: 404,
-    message: "Requested pharmacy-related resource not found",
-    path: req.path,
-  });
+/**
+ * HEALTH
+ */
+app.get("/health", (req: Request, res: Response) => {
+    res.status(200).json({
+        status: "healthy",
+        service: "pharmacy-service",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: env.NODE_ENV,
+    });
 });
 
-// Global Error handler with Winston
-app.use((err: any, req: any, res: Response, next: NextFunction) => {
-  logger.error("Server error", {
-    requestId: req.id,
-    message: err.message,
-    stack: err.stack,
-  });
+/**
+ * 404
+ */
+app.use(
+    (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        res.status(404).json({
+            status: 404,
+            message:
+                "Requested pharmacy-related resource not found",
+        });
+    }
+);
 
-  res.status(err.status || 500).json({
-    success: false,
-    message: "Internal Server Error in Pharmacy Service",
-    error: env.NODE_ENV === "development" ? err : {},
-  });
-});
+/**
+ * GLOBAL ERROR HANDLER
+ */
+app.use(
+    (
+        err: any,
+        req: any,
+        res: Response,
+        next: NextFunction
+    ) => {
+
+        logger.error("Server error", {
+            requestId: req.id,
+            message: err.message,
+            stack: err.stack,
+        });
+
+        res.status(err.status || 500).json({
+            success: false,
+
+            message:
+                "Internal Server Error in Pharmacy Service",
+
+            error:
+                env.NODE_ENV === "development"
+                    ? err
+                    : {},
+        });
+    }
+);
 
 export default app;

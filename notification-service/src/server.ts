@@ -12,6 +12,8 @@ const startServer = async () => {
     try {
         await connectDB();
         await connectRabbitMQ();
+        const { startConsumer } = await import("./events/consumer.js");
+        await startConsumer();
         
         // Ensure table exists safely
         const { default: Notification } = await import("./models/notification.model");

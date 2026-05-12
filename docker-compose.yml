@@ -24,7 +24,7 @@ services:
       - role-service  
       - s3-service
       - bulmq-service
-      - socket-service
+      - socketio-service
     networks:
       - hosta-network
 
@@ -33,151 +33,197 @@ services:
     build: ./user-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file:
       - ./user-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   ambulance-service:
     container_name: ambulance-service
     build: ./ambulance-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file:
       - ./ambulance-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   blood-service:
     container_name: blood-service
     build: ./bloodDonor-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file:
       - ./bloodDonor-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   blood-bank-service:
     container_name: blood-bank-service
     build: ./blood-bank-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./blood-bank-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   pharmacy-service:
     container_name: pharmacy-service
     build: ./pharmacy-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./pharmacy-service/.env
     networks:
       - hosta-network 
+    depends_on:
+      - rabbitmq
 
   staff-service:
     container_name: staff-service
     build: ./staff-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./staff-service/.env
     networks:
       - hosta-network
     depends_on:
       - hospital-service
+      - rabbitmq
 
   doctor-service:
     container_name: doctor-service
     build: ./doctor-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./doctor-service/.env
     networks:
       - hosta-network
     depends_on:
       - hospital-service
+      - rabbitmq
 
   speciality-service:
     container_name: speciality-service
     build: ./speciality-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./speciality-service/.env
     networks:
       - hosta-network 
+    depends_on:
+      - rabbitmq
 
   hospital-service:
     container_name: hospital-service
     build: ./hospital-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./hospital-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   booking-service:
     container_name: booking-service
     build: ./booking-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./booking-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   medicine-reminder-service:
     container_name: medicine-reminder-service
     build: ./medicinremainder-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./medicinremainder-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   notification-service:
     container_name: notification-service
     build: ./notification-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./notification-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   review-service:
     container_name: review-service
     build: ./review-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./review-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
   lab-service:
     container_name: lab-service
     build: ./lab-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./lab-service/.env
     networks:
       - hosta-network 
+    depends_on:
+      - rabbitmq
 
   ads-service:
     container_name: ads-service
     build: ./ads-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./ads-service/.env
     networks:
       - hosta-network 
+    depends_on:
+      - rabbitmq
 
   role-service:
     container_name: role-service
     build: ./role-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./role-service/.env
     networks:
       - hosta-network   
+    depends_on:
+      - rabbitmq
 
   s3-service:
     container_name: s3-service
@@ -193,18 +239,33 @@ services:
     build: ./bulmq-service
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     env_file: ./bulmq-service/.env
     networks:
       - hosta-network
+    depends_on:
+      - rabbitmq
 
-  socket-service:
-    container_name: socket-service
-    build: ./socket-service
+  socketio-service:
+    container_name: socketio-service
+    build: ./socketio-service
+    environment:
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    env_file: ./socketio-service/.env
+    networks:
+      - hosta-network   
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
-      - "3020:3020"
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - hosta-network
-
 
 networks:
   hosta-network:

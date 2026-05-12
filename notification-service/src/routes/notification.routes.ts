@@ -23,7 +23,7 @@ router.use(authenticate);
 
 // CRUD
 router.post(
-  "/notification/register",
+  "/notification",
   validate(createNotificationSchema),
   createNotification
 );

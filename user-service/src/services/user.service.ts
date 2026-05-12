@@ -108,6 +108,27 @@ export const userService = {
       await t.commit();
 
       logger.info("User created successfully", { id: user.id });
+      
+      try {
+        await publishEvent("user_events", "USER_REGISTERED", {
+          userId: user.id,
+          email: user.email,
+          roleId: user.roleId,
+          firstName: data?.firstName,
+          lastName: data?.lastName
+        });
+
+        if (data?.firstName && data?.lastName) {
+          await publishEvent("patient_events", "PATIENT_REGISTERED", {
+            userId: user.id,
+            patientName: `${data.firstName} ${data.lastName}`,
+            phone: data.mobileNumber
+          });
+        }
+      } catch (err) {
+        logger.error("Failed to publish user/patient registered events", err);
+      }
+
       const { password: _, ...safeUser } = user.toJSON();
       return safeUser;
     } catch (dbError: any) {
@@ -140,11 +161,9 @@ export const userService = {
     }
 
     const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
-<<<<<<< HEAD
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
-=======
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId  });
->>>>>>> a4bf42b (fix)
+
+
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId  })
     const { password: _, ...safeUser } = user.toJSON();
     return { token, refreshToken, user: safeUser };
   },

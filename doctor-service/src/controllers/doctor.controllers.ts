@@ -94,8 +94,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
       return;
     }
   } catch (error) {
-    res.status(404).json({ 
-      success: false, 
+    res.status(404).json({
+      success: false,
       message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
       error: { code: "HOSPITAL_NOT_FOUND" }
     });
@@ -115,30 +115,31 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
   }
 
   const newDoctor = await Doctor.create({
-   firstName, 
-   lastName, 
-   phone: numericPhone, 
-   email, 
-   password, 
-   fees, 
-   department, 
-   specialist, 
-   dob, 
-   gender, 
-   knowLanguages, 
-   consulting, 
-   bookingOpen, 
-   qualification, 
-   address, 
-   displayName,
-   joiningDate,
-   outDoorConsulting,
-   hospitalId
+    firstName,
+    lastName,
+    phone: numericPhone,
+    email,
+    password,
+    fees,
+    department,
+    specialist,
+    dob,
+    gender,
+    knowLanguages,
+    consulting,
+    bookingOpen,
+    qualification,
+    address,
+    displayName,
+    joiningDate,
+    outDoorConsulting,
+    hospitalId
   });
 
   await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
     doctorId: newDoctor.id,
     phone: newDoctor.phone,
+    hospitalId: newDoctor.hospitalId
   });
 
   res.status(201).json({
@@ -301,7 +302,7 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
 });
 
 // GET ONE - GET /doctor/:id
-export const getanDoctor : any = asyncHandler(async (req: Request, res: Response) => {
+export const getanDoctor: any = asyncHandler(async (req: Request, res: Response) => {
   const doctor = await Doctor.findByPk(req.params.id);
   if (!doctor) {
     res.status(404).json({
@@ -513,11 +514,11 @@ export const verifyDoctorOtp: any = asyncHandler(async (req: Request, res: Respo
 
   setRefreshTokenCookie(res, refreshToken);
 
-  res.status(200).json({ 
-    success: true, 
+  res.status(200).json({
+    success: true,
     message: "OTP verified",
     token,
-    data: doctor 
+    data: doctor
   });
 });
 
@@ -576,7 +577,7 @@ export const refreshDoctorToken: any = asyncHandler(async (req: Request, res: Re
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
-    
+
     // Check Redis Blacklist / Rotation (REMOVED)
 
     const doctor = await Doctor.findByPk(decoded.id);

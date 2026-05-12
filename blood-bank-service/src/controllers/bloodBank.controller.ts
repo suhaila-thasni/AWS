@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import BloodBank from "../models/bloodBank.model";
 import { httpClient } from "../utils/httpClient";
+import { publishEvent } from "../events/publisher";
 
 const VALID_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
@@ -59,6 +60,14 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
     // ⚔️ Add to existing count
     const newCount = Number(stock.count) + Number(count || 0);
     await stock.update({ count: newCount });
+    
+    await publishEvent("blood_bank_events", "STOCK_UPDATED", {
+      hospitalId,
+      bloodGroup,
+      count: newCount,
+      action: "added"
+    });
+
     res.status(200).json({ 
       success: true, 
       message: `Added ${count} units. New total for ${bloodGroup} is ${newCount} units for hospital ${hospitalId}`, 
@@ -67,6 +76,13 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
   } else {
     // ⚔️ Create new record
     stock = await BloodBank.create({ hospitalId, bloodGroup, count: count || 0 });
+
+    await publishEvent("blood_bank_events", "STOCK_CREATED", {
+      hospitalId,
+      bloodGroup,
+      count: count || 0
+    });
+
     res.status(201).json({ 
       success: true, 
       message: `Blood group ${bloodGroup} record created with ${count} units for hospital ${hospitalId}`, 
@@ -127,7 +143,16 @@ export const updateStockById = asyncHandler(async (req: Request, res: Response) 
     return;
   }
   
+  
   await stock.update({ count });
+
+  await publishEvent("blood_bank_events", "STOCK_UPDATED", {
+    hospitalId: stock.hospitalId,
+    bloodGroup: stock.bloodGroup,
+    count: count,
+    action: "manual_update"
+  });
+
   res.status(200).json({ success: true, message: "Inventory updated successfully", data: stock });
 });
 

@@ -19,6 +19,7 @@ export const SERVICES = {
   ROLE_SERVICE: env.ROLE_SERVICE_URL, 
   S3_SERVICE: env.S3_SERVICE_URL,
   BULMQ_SERVICE: env.BULMQ_SERVICE_URL,
+  SOCKETIO_SERVICE: env.SOCKETIO_SERVICE_URL,
 };
 
 
@@ -97,4 +98,8 @@ if (!SERVICES.S3_SERVICE) {
 
 if (!SERVICES.BULMQ_SERVICE) {
   throw new Error("BULMQ_SERVICE_URL not defined");
+}
+
+if (!SERVICES.SOCKETIO_SERVICE) {
+  throw new Error("SOCKETIO_SERVICE_URL not defined");
 }

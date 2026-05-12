@@ -6,6 +6,7 @@ import PatientVitals from "../models/patientVitals.model";
 import User from "../models/user.model";
 import jwt from "jsonwebtoken";
 import { generateToken, generateRefreshToken } from "../services/jwt.service";
+import { publishEvent } from "../events/publisher";
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -19,6 +20,7 @@ const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
     path: "/",
   });
 };
+
 
 // --- USER CONTROLLERS ---
 
@@ -229,6 +231,17 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
         { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
       ],
     });
+
+    try {
+      await publishEvent("patient_events", "PATIENT_REGISTERED", {
+        patientId: result?.id,
+        userId: userId || null,
+        patientName: `${firstName} ${lastName}`,
+        phone: mobileNumber
+      });
+    } catch (err) {
+      console.error("Failed to publish PATIENT_REGISTERED event:", err);
+    }
 
     res.status(201).json({
       success: true,

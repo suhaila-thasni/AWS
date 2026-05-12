@@ -13,12 +13,14 @@ import { sendEmail } from "../services/mail.service";
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,//Explicitly false to match user-service
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
   });
 };
+
+
 
 
 const APPLE_TEST_NUMBER = "9999999999";

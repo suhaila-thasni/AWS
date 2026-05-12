@@ -56,6 +56,18 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach 
   });
 
+  await publishEvent(
+  "prescription_events",
+  "PRESCRIPTION_CREATED",
+  {
+    prescriptionId: prescription.id,
+    bookingId,
+    doctorId,
+    patientId,
+  }
+);
+
+
 
   res.status(201).json({
     success: true,
@@ -140,6 +152,17 @@ export const deletePrescription: any = asyncHandler(async (req: Request, res: Re
   }
 
   await Prescription.destroy({ where: { id: req.params.id } });
+
+  
+
+  await publishEvent(
+  "prescription_events",
+  "PRESCRIPTION_DELETED",
+  {
+    prescriptionId: Number(req.params.id),
+  }
+);
+
 
   res.status(200).json({
     success: true,

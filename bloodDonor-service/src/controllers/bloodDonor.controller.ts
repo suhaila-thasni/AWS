@@ -227,10 +227,10 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   await donor.update({ otp: null as any, otpExpiry: null as any });
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor", roleId: donor.roleId }, jwtKey, {
+  const token = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
     expiresIn: "15m"
   });
-  const refreshToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor", roleId: donor.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
     expiresIn: "2w"
   });
 
@@ -401,7 +401,7 @@ export const refreshBloodDonorToken: any = asyncHandler(async (req: Request, res
       return;
     }
 
-    const newToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor", roleId: donor.roleId }, jwtKey, {
+    const newToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
       expiresIn: "15m",
     });
 
