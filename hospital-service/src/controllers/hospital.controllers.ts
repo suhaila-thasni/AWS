@@ -500,7 +500,12 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
 
 // GET ALL - GET /hospital 
 export const getHospital: any = asyncHandler(async (req: Request, res: Response) => {
-  const hospital = await Hospital.findAll();
+
+     const { type } : any = req.query;
+
+      const hospital = await Hospital.findAll({
+      where: type,
+    });
 
   if (hospital.length === 0) {
     res.status(404).json({
