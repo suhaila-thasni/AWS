@@ -8,4 +8,6 @@ const router = express.Router();
 //          POST /api/bulmq/medicin-task
 router.use("/bulmq", proxyRequest);
 
+
+
 export default router;
