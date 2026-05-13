@@ -384,6 +384,12 @@ export const getDoctors = asyncHandler(
       speciality?: string;
     };
 
+         if (Array.isArray(id || speciality)) {
+      id = id[0];
+      speciality = speciality[0];
+    }
+
+
     const whereClause: any = {};
 
     // Hospital filter
