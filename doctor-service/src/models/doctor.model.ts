@@ -71,6 +71,7 @@ interface IDoctor {
   otpExpiry?: Date;
   hospitalId?: number;
   imageUrl?: string; 
+  experience?: string;
 }
 
 /* =======================
@@ -116,6 +117,7 @@ class Doctor
   public hospitalId?: number;
   public roleId: number;
   public imageUrl?: string;
+  public experience?: string;
 
 }
 
@@ -187,6 +189,11 @@ Doctor.init(
     password: {
       type: DataTypes.STRING,
     },
+
+    experience: {
+       type: DataTypes.STRING,
+       allowNull: false
+    }, 
 
     fees: {
       type: DataTypes.DECIMAL(10, 2), 
