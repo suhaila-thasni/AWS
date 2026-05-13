@@ -54,11 +54,11 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
   }
 
   const newAmbulance = await Ambulance.create({
-    serviceName: serviceName,
-    address: address,
-    phone: phone,
-    vehicleType: vehicleType,
-    userId: req.user.id, // Linked to User account
+    serviceName,
+    address,
+    phone,
+    vehicleType,,
+    userId,
      hospitalId
   });
 
