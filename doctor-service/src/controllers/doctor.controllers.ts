@@ -379,16 +379,15 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
-    let { id, speciality } = req.query as {
-      id?: string;
-      speciality?: string;
-    };
-
-         if (Array.isArray(id || speciality)) {
+    let { id, speciality }: any = req.query;
+  
+if (Array.isArray(id)) {
       id = id[0];
-      speciality = speciality[0];
     }
 
+    if (Array.isArray(speciality)) {
+      speciality = speciality[0];
+    }
 
     const whereClause: any = {};
 
@@ -400,11 +399,10 @@ export const getDoctors = asyncHandler(
     // Speciality filter
     if (speciality) {
       whereClause.department = {
-        [Op.iLike]: `%${speciality}%`, // LIKE search
+        [Op.iLike]: `%${speciality}%`,
       };
     }
 
-    // Fetch doctors
     const doctors = await Doctor.findAll({
       where: whereClause,
     });
