@@ -6,7 +6,6 @@ import bcrypt from "bcrypt";
    INTERFACES
 ======================= */
 
-
 interface IConsultingSession {
   open: string;
   close: string;
@@ -73,6 +72,9 @@ interface IDoctor {
   hospitalId?: number;
   imageUrl?: string; 
   experience?: string;
+  regNo?: string;
+  autoDecline?: number;
+  appoimentCount?: number;
 }
 
 /* =======================
@@ -119,6 +121,9 @@ class Doctor
   public roleId: number;
   public imageUrl?: string;
   public experience?: string;
+  public regNo?: string;
+  public autoDecline?: number;
+  public appoimentCount?: number;
 
 }
 
@@ -163,6 +168,17 @@ Doctor.init(
 
     qualification: {
       type: DataTypes.STRING,
+    },
+    regNo: {
+      type: DataTypes.STRING,
+    },
+     autoDecline: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+     appoimentCount: {
+      type: DataTypes.INTEGER ,
+      allowNull: true
     },
 
     phone: {
