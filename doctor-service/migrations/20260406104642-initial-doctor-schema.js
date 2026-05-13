@@ -25,6 +25,7 @@ module.exports = {
         qualification: { type: Sequelize.STRING },
         address: { type: Sequelize.TEXT },
         displayName: { type: Sequelize.STRING },
+        experience: { type: Sequelize.STRING },
         joiningDate: { type: Sequelize.DATE },
         createdAt: { type: Sequelize.DATE, allowNull: false },
         updatedAt: { type: Sequelize.DATE, allowNull: false },
