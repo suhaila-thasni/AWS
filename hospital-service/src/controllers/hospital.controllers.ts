@@ -354,14 +354,10 @@ export const verifyLoginOtp = verifyOtp;
 
 // RESET PASSWORD - POST /hospital/auth/reset-password
 export const resetPassword: any = asyncHandler(async (req: Request, res: Response) => {
-  const { email, otp, newPassword } = req.body;
+  const { email, newPassword } = req.body;
 
   const hospital = await Hospital.scope("withPassword").findOne({ where: { email } });
 
-  if (!hospital || hospital.otp !== otp.toString() || (hospital.otpExpiry && new Date() > hospital.otpExpiry)) {
-    res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-    return;
-  }
 
   hospital.password = newPassword;
   hospital.otp = null as any;
