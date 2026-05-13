@@ -16,7 +16,7 @@ const router = Router();
 // CRUD
 
 router.post("/speciality",authenticate,checkPermission("speciality", "create"),Registeration);
-router.get("/speciality", authenticate, checkPermission("speciality", "view"),getSpecialitys);
+router.get("/speciality", getSpecialitys);
 router.get("/speciality/:id",authenticate, checkPermission("speciality", "view"), getanSpeciality);
 router.put("/speciality/:id",authenticate, checkPermission("speciality", "edit"), updateData);
 router.delete("/speciality/:id",authenticate, checkPermission("speciality", "delete"), specialityDelete);
