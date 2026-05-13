@@ -7,8 +7,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('doctor', 'experience', {
       type: Sequelize.STRING,
-      allowNull: false,
-      defaultValue: '0 years',
+      allowNull: false
     });
   },
 
