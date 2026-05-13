@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
    INTERFACES
 ======================= */
 
+
 interface IConsultingSession {
   open: string;
   close: string;
