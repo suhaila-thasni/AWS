@@ -25,26 +25,12 @@ import { httpClient } from "../utils/httpClient";
 
 // REGISTER - POST /ambulance/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { serviceName, address, phone, vehicleType, userId: bodyUserId } = req.body;
-  const tokenUserId = req.user.id;
-  const authHeader = req.headers.authorization;
-
-  // 1. Security Check: If userId is provided in body, it must match the token ID
-  if (bodyUserId && Number(bodyUserId) !== Number(tokenUserId)) {
-    res.status(403).json({
-      success: false,
-      message: "Security violation: The provided userId does not match your authenticated account.",
-      error: { code: "USER_ID_MISMATCH" }
-    });
-    return;
-  }
-
-  const userId = tokenUserId; // Use token ID as the source of truth
+  const { serviceName, address, phone, vehicleType, userId,  hospitalId } = req.body;
 
   // 2. Validate User Existence (Cross-Service: user-service)
   try {
     await httpClient.get(`${process.env.USER_SERVICE_URL}/users/${userId}`, {
-      headers: { Authorization: authHeader }
+      headers: { Authorization: req.headers.authorization }
     });
   } catch (error: any) {
     console.error("User validation failed:", error.message);
@@ -73,6 +59,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     phone: phone,
     vehicleType: vehicleType,
     userId: req.user.id, // Linked to User account
+     hospitalId
   });
 
   await publishEvent("ambulance_events", "AMBULANCE_REGISTERED", {
