@@ -273,27 +273,39 @@ export const ambulanceDelete: any = asyncHandler(async (req: Request, res: Respo
 });
 
 // GET ALL - GET /ambulance
-export const getAmbulaces: any = asyncHandler(async (req: Request, res: Response) => {
-  const ambulances = await Ambulance.findAll();
+export const getAmbulaces = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  if (ambulances.length === 0) {
-    res.status(404).json({
+  let { id }: any = req.query;
+
+  // ✅ FIX: convert array → string
+  if (Array.isArray(id)) {
+    id = id[0];
+  }
+
+  const whereClause: any = {};
+
+   // integer filter
+    if (id) {
+      whereClause.userId = Number(id);
+    }
+
+  const ambulance = await Ambulance.findAll({
+    where: whereClause,
+  });
+
+  if (ambulance.length === 0) {
+     res.status(404).json({
       success: false,
       message: "No data found",
       data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
     });
+
     return;
   }
 
-  const safeAmbulances = ambulances.map(ambulance => {
-    return ambulance.toJSON();
-  });
-
   res.status(200).json({
     success: true,
-    status: "Success",
-    data: safeAmbulances,
-    error: null,
+    data: ambulance,
   });
+  return;
 });
