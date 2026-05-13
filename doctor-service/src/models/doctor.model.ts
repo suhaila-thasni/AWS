@@ -171,6 +171,7 @@ Doctor.init(
     },
     regNo: {
       type: DataTypes.STRING,
+      allowNull: false
     },
      autoDecline: {
       type: DataTypes.INTEGER,
