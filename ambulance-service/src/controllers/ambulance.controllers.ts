@@ -275,18 +275,23 @@ export const ambulanceDelete: any = asyncHandler(async (req: Request, res: Respo
 // GET ALL - GET /ambulance
 export const getAmbulaces = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  let { id }: any = req.query;
+  let { userId, hospitalId }: any = req.query;
 
   // ✅ FIX: convert array → string
-  if (Array.isArray(id)) {
-    id = id[0];
+  if (Array.isArray(userId)) {
+    userId = userId[0];
+  }
+
+   if (Array.isArray(hospitalId)) {
+    hospitalId = hospitalId[0];
   }
 
   const whereClause: any = {};
 
    // integer filter
-    if (id) {
-      whereClause.userId = Number(id);
+    if (userId || hospitalId) {
+      whereClause.userId = Number(userId);
+      whereClause.hospitalId = Number(hospitalId);
     }
 
   const ambulance = await Ambulance.findAll({
