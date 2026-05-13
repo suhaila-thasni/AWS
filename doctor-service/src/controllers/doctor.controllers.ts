@@ -374,40 +374,48 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 });
 
 
-// GET ALL - GET /doctor
+// GET ALL - GET /doctors
+
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
-    let { id }: any = req.query;
-
-    // array safety
-    if (Array.isArray(id)) {
-      id = id[0];
-    }
+    let { id, speciality } = req.query as {
+      id?: string;
+      speciality?: string;
+    };
 
     const whereClause: any = {};
 
-    // integer filter
+    // Hospital filter
     if (id) {
       whereClause.hospitalId = Number(id);
     }
 
-    const doctor = await Doctor.findAll({
+    // Speciality filter
+    if (speciality) {
+      whereClause.department = {
+        [Op.iLike]: `%${speciality}%`, // LIKE search
+      };
+    }
+
+    // Fetch doctors
+    const doctors = await Doctor.findAll({
       where: whereClause,
     });
 
-    if (doctor.length === 0) {
+    if (doctors.length === 0) {
       res.status(404).json({
         success: false,
-        message: "No data found",
-        data: null,
+        message: "No doctors found",
+        data: [],
       });
       return;
     }
 
     res.status(200).json({
       success: true,
-      data: doctor,
+      count: doctors.length,
+      data: doctors,
     });
   }
 );
