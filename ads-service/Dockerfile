@@ -36,10 +36,9 @@ COPY --from=builder /app/.sequelizerc* ./
 # Security: run as non-root user
 USER node
 
-EXPOSE 3015
-EXPOSE 3015
+EXPOSE 3014
 
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3015/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3014/health || exit 1
 
 CMD ["sh", "-c", "npx sequelize-cli db:migrate && node dist/server.js"]
