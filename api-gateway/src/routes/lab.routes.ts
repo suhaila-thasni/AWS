@@ -1,8 +1,8 @@
-import express from "express";
-import { proxyRequest } from "../services/lab.service";
+// import express from "express";
+// import { proxyRequest } from "../services/lab.service";
 
-const router = express.Router();
+// const router = express.Router();
 
-router.use("/lab", proxyRequest);
+// router.use("/lab", proxyRequest);
 
-export default router;
+// export default router;
