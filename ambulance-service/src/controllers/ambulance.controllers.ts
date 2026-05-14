@@ -88,6 +88,13 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response): 
     hospitalId: hospitalId || null,
   });
 
+  if (!newAmbulance) {
+  return res.status(500).json({
+    success: false,
+    message: "Failed to create ambulance",
+  });
+}
+  
   await publishEvent("ambulance_events", "AMBULANCE_REGISTERED", {
     ambulanceId: newAmbulance?.id,
     phone: newAmbulance?.phone,
