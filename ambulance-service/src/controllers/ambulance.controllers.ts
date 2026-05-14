@@ -89,8 +89,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response): 
   });
 
   await publishEvent("ambulance_events", "AMBULANCE_REGISTERED", {
-    ambulanceId: newAmbulance.id,
-    phone: newAmbulance.phone,
+    ambulanceId: newAmbulance?.id,
+    phone: newAmbulance?.phone,
   });
 
   
