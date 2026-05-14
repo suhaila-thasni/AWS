@@ -18,10 +18,10 @@ COPY --from=builder /app/migrations ./migrations
 # SECURITY: run as non-root user
 USER node
 
-EXPOSE 4015
+EXPOSE 3015
 
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD node -e 'require("http").get("http://localhost:4015/health", (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1))'
+  CMD node -e 'require("http").get("http://localhost:3015/health", (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1))'
 
 CMD ["sh", "-c", "npx sequelize-cli db:migrate && node dist/server.js"]
 
