@@ -285,6 +285,7 @@ export const ambulanceDelete: any = asyncHandler(async (req: Request, res: Respo
 });
 
 // GET ALL - GET /ambulance
+
 export const getAmbulaces = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   let { userId, hospitalId }: any = req.query;
 
@@ -319,3 +320,6 @@ export const getAmbulaces = asyncHandler(async (req: Request, res: Response): Pr
     data: ambulance,
   });
 });
+
+
+
