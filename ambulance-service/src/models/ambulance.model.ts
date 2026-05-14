@@ -17,6 +17,7 @@ interface IAmbulance {
   otp?: string;
   otpExpiry?: Date;
   userId?: number;
+  hospitalId?: number;
 }
 
 class Ambulance extends Model<IAmbulance> implements IAmbulance {
@@ -29,7 +30,7 @@ class Ambulance extends Model<IAmbulance> implements IAmbulance {
   public otp!: string;
   public otpExpiry!: Date;
   public userId!: number;
-  
+  public hospitalId!: number;
 }
 
 Ambulance.init(
@@ -66,6 +67,10 @@ Ambulance.init(
       type: DataTypes.INTEGER,
       allowNull: true, 
     },
+     hospitalId: {
+      type: DataTypes.INTEGER,
+      allowNull: true, 
+    },
     otp: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -73,8 +78,7 @@ Ambulance.init(
     otpExpiry: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-  
+    }
   },
   {
     sequelize,
