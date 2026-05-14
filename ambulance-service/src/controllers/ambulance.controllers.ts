@@ -24,42 +24,68 @@ const getTwilioClient = () => {
 import { httpClient } from "../utils/httpClient";
 
 // REGISTER - POST /ambulance/register
-export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { serviceName, address, phone, vehicleType, userId,  hospitalId } = req.body;
+export const Registeration: any = asyncHandler(async (req: any, res: Response): Promise<void> => {
+  const { serviceName, address, phone, vehicleType, userId, hospitalId } = req.body;
+  
 
-  // 2. Validate User Existence (Cross-Service: user-service)
-  try {
-    await httpClient.get(`${process.env.USER_SERVICE_URL}/users/${userId}`, {
-      headers: { Authorization: req.headers.authorization }
-    });
-  } catch (error: any) {
-    console.error("User validation failed:", error.message);
-    res.status(404).json({
-      success: false,
-      message: `User with ID ${userId} does not exist in the user service.`,
-      error: { code: "USER_NOT_FOUND" }
-    });
-    return;
+  // Validate user only if provided
+  if (userId) {
+    try {
+      await httpClient.get(
+        `${process.env.USER_SERVICE_URL}/users/${userId}`,
+        { headers: { Authorization: req.headers.authorization } }
+      );
+    } catch (err) {
+       res.status(404).json({
+        success: false,
+        message: `User not found with ID ${userId}`,
+        error: { code: "USER_NOT_FOUND" }
+      });
+      return;
+    }
   }
 
-  const exist = await Ambulance.findOne({ where: { phone: phone } });
+  // Validate hospital only if provided
+  if (hospitalId) {
+    try {
+  
+      
+   await httpClient.get(
+        `${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`,
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+  
+    } catch (err) {
+       res.status(404).json({
+        success: false,
+        message: `Hospital not found with ID ${hospitalId}`,
+        error: { code: "HOSPITAL_NOT_FOUND" }
+      });
+      return;
+    }
+  }
+
+  const exist = await Ambulance.findOne({ where: { phone } });
+
+  
   if (exist) {
-    res.status(400).json({
+     res.status(400).json({
       success: false,
       message: "Ambulance already exists",
-      data: null,
-      error: { code: "AMBULANCE_ALREADY_EXISTS", details: null },
+      error: { code: "AMBULANCE_ALREADY_EXISTS" },
     });
     return;
   }
 
+  
   const newAmbulance = await Ambulance.create({
     serviceName,
     address,
     phone,
-    vehicleType,,
-    userId,
-     hospitalId
+    vehicleType,
+    userId: userId || null,
+    hospitalId: hospitalId || null,
   });
 
   await publishEvent("ambulance_events", "AMBULANCE_REGISTERED", {
@@ -67,16 +93,15 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     phone: newAmbulance.phone,
   });
 
-  const ambulanceData = newAmbulance.toJSON();
-
-  res.status(201).json({
+  
+   res.status(201).json({
     success: true,
     message: "Registration completed successfully",
-    data: ambulanceData,
+    data: newAmbulance.toJSON(),
     error: null,
   });
+  return;
 });
-
 
 // LOGIN WITH PHONE (OTP REQUEST) - POST /ambulance/login/phone
 export const loginWithPhone: any = asyncHandler(async (req: Request, res: Response) => {
