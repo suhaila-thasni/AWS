@@ -34,10 +34,10 @@ COPY --from=builder /app/config ./config
 # Security: run as non-root user
 USER node
 
-EXPOSE 3017
+EXPOSE 3016
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3017/health', (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:3016/health', (res) => res.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
 
 CMD ["node", "dist/server.js"]
