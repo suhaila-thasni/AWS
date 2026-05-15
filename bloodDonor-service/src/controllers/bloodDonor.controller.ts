@@ -35,27 +35,15 @@ const getTwilioClient = () => {
 };
 
 // ✅ REGISTER DONOR - POST /donors/register (Authenticated users only)
+
 export const createDonor: any = asyncHandler(async (req: any, res: Response) => {
-  const { phone, dateOfBirth, bloodGroup, address, userId: bodyUserId } = req.body;
-  const tokenUserId = req.user.id;
-  const authHeader = req.headers.authorization;
-
-  // 1. Security Check: If userId is provided in body, it must match the token ID
-  if (bodyUserId && Number(bodyUserId) !== Number(tokenUserId)) {
-    res.status(403).json({
-      success: false,
-      message: "Security violation: The provided userId does not match your authenticated account.",
-      error: { code: "USER_ID_MISMATCH" }
-    });
-    return;
-  }
-
-  const userId = tokenUserId; // Use token ID as the source of truth
+  const { phone, dateOfBirth, bloodGroup, address, userId } = req.body;
+ 
 
   // 2. Validate User Existence (Cross-Service: user-service)
   try {
     await httpClient.get(`{process.env.USER_SERVICE_URL}/users/${userId}`, {
-      headers: { Authorization: authHeader }
+      headers: { Authorization: req.headers.authorization }
     });
   } catch (error: any) {
     console.error("User validation failed:", error.message);
@@ -142,6 +130,7 @@ export const createDonor: any = asyncHandler(async (req: any, res: Response) => 
     error: null,
   });
 });
+
 
 // 📱 LOGIN WITH PHONE (OTP REQUEST) - POST /donors/login/phone
 export const loginWithPhone: any = asyncHandler(async (req: Request, res: Response) => {
