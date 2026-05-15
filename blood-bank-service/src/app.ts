@@ -138,7 +138,7 @@ app.use(
 /**
  * ROUTES
  */
-app.use("/blood-bank", routes);
+app.use("/", routes);
 
 /**
  * HEALTH
