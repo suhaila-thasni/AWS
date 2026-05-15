@@ -30,6 +30,6 @@ router.post("/ambulance/otp", validate(verifyOtpSchema), verifyOtp);
 router.get("/ambulance", getAmbulaces);
 router.get("/ambulance/:id",  validateParams(idParamSchema), getanAmbulace);
 router.put("/ambulance/:id", authenticate, validateParams(idParamSchema), validate(updateSchema), updateData);
-router.delete("/ambulance/:id", authenticate, validateParams(idParamSchema),checkPermission("ambulance", "delete"), ambulanceDelete);
+router.delete("/ambulance/:id", authenticate, validateParams(idParamSchema), ambulanceDelete);
 
 export default router;
