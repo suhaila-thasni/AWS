@@ -21,9 +21,9 @@ breaker.fallback(() => {
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // 🛡️ Safe Path Mapping: Gateway /api/stocks or /api/blood-bank -> Microservice /blood-bank/...
-    let targetPath = req.originalUrl.replace("/api", "");
-    if (!targetPath.startsWith("/blood-bank")) {
-        targetPath = `/blood-bank${targetPath}`;
+    let targetPath = req.originalUrl.replace("/api/blood-banks", "/blood-banks");
+    if (!targetPath.startsWith("/blood-banks")) {
+        targetPath = `/blood-banks${targetPath}`;
     }
     const url = `${SERVICES.BLOOD_BANK_SERVICE}${targetPath}`;
 
