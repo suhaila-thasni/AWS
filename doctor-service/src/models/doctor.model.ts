@@ -74,7 +74,7 @@ interface IDoctor {
   experience?: string;
   regNo?: string;
   autoDecline?: number;
-  appoimentCount?: number;
+  appointmentCount?: number;
 }
 
 /* =======================
@@ -123,7 +123,7 @@ class Doctor
   public experience?: string;
   public regNo?: string;
   public autoDecline?: number;
-  public appoimentCount?: number;
+  public appointmentCount?: number;
 
 }
 
@@ -177,7 +177,7 @@ Doctor.init(
       type: DataTypes.INTEGER,
       allowNull: true
     },
-     appoimentCount: {
+     appointmentCount: {
       type: DataTypes.INTEGER ,
       allowNull: true
     },
@@ -210,7 +210,7 @@ Doctor.init(
 
     experience: {
        type: DataTypes.STRING,
-       allowNull: false
+       allowNull: true
     }, 
 
     fees: {
