@@ -229,22 +229,63 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
 });
 
 // 🔍 GET ALL DONORS (with compatibility filters) - GET /donors
-export const getDonors: any = asyncHandler(async (req: Request, res: Response) => {
-  const { bloodGroup, pincode, place } = req.query;
 
-  let where: any = {};
+export const getDonors: any = asyncHandler(async (req: Request, res: Response) : Promise<void> => {
 
-  // 🩸 Apply Smart Compatibility Logic
-  if (bloodGroup && typeof bloodGroup === "string") {
-    const compatibleGroups = COMPATIBILITY_MAP[bloodGroup.toUpperCase()] || [bloodGroup];
+  let { bloodGroup, pincode, place, userId, country, state, district }: any = req.query;
+
+  // Convert array → string
+  if (Array.isArray(userId)) userId = userId[0];
+  if (Array.isArray(bloodGroup)) bloodGroup = bloodGroup[0];
+  if (Array.isArray(pincode)) pincode = pincode[0];
+  if (Array.isArray(place)) place = place[0];
+  if (Array.isArray(country)) country = country[0];
+  if (Array.isArray(state)) state = state[0];
+  if (Array.isArray(district)) district = district[0];
+
+  const where: any = {};
+
+  // Blood group compatibility
+  if (bloodGroup) {
+    const compatibleGroups =
+      COMPATIBILITY_MAP[bloodGroup.toUpperCase()] || [bloodGroup];
+
     where.bloodGroup = {
       [Op.in]: compatibleGroups,
     };
   }
 
+  // userId filter
+  if (userId) {
+    where.userId = Number(userId);
+  }
+
+  // Address filters
   if (pincode) {
-    where.address = {
-      pincode: pincode,
+    where["address.pincode"] = pincode;
+  }
+
+  if (place) {
+    where["address.place"] = {
+      [Op.iLike]: `%${place}%`,
+    };
+  }
+
+  if (country) {
+    where["address.country"] = {
+      [Op.iLike]: `%${country}%`,
+    };
+  }
+
+  if (state) {
+    where["address.state"] = {
+      [Op.iLike]: `%${state}%`,
+    };
+  }
+
+  if (district) {
+    where["address.district"] = {
+      [Op.iLike]: `%${district}%`,
     };
   }
 
@@ -253,14 +294,14 @@ export const getDonors: any = asyncHandler(async (req: Request, res: Response) =
     order: [["createdAt", "DESC"]],
   });
 
-  if (donors.length === 0) {
-    res.status(404).json({
+  if (!donors.length) {
+  res.status(404).json({
       success: false,
       message: "No donors found",
       data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
+      error: { code: "NO_DATA_FOUND" },
     });
-    return;
+      return;
   }
 
   res.status(200).json({
