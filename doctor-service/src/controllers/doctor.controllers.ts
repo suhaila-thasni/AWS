@@ -66,7 +66,7 @@ export const sendDoctorOtpEmail = async (email: string, otp: string, doctorName:
 
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   const { hospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
-  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting, experience, appoimentCount, regNo  } = req.body;
+  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting, experience, appointmentCount, regNo  } = req.body;
 
 
   // 2. Validate hospitalId via hospital-service
@@ -121,7 +121,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
    outDoorConsulting,
    hospitalId,
     experience,
-    appoimentCount, regNo 
+    appointmentCount, regNo 
   });
 
   await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
