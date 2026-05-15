@@ -203,44 +203,42 @@ export const updateData: any = asyncHandler(
       bookingId: updatedBooking.id,
     });
 
-    if (updatedBooking.status !== "cancel") {
-      // ✅ Use correct values
-      await axios.post(
-        `${process.env.BULMQ_SERVICE_URL}/booking-task/users`,
-        {
-          patient_phone: updatedBooking?.patient_phone,
-          doctorId: updatedBooking?.doctorId,
-          status: updatedBooking?.status,
-          consulting_time: updatedBooking?.consulting_time,
-          message: `Booking ${updatedBooking?.status}`,
-        },
-         {
-          headers: { Authorization: req.headers.authorization },
-        },
-      );
+    // if (updatedBooking.status !== "cancel") {
+    //   // ✅ Use correct values
+    //   await axios.post(
+    //     `${process.env.BULMQ_SERVICE_URL}/booking-task/users`,
+    //     {
+    //       patient_phone: updatedBooking?.patient_phone,
+    //       doctorId: updatedBooking?.doctorId,
+    //       status: updatedBooking?.status,
+    //       consulting_time: updatedBooking?.consulting_time,
+    //       message: `Booking ${updatedBooking?.status}`,
+    //     },
+    //      {
+    //       headers: { Authorization: req.headers.authorization },
+    //     },
+    //   );
 
-      const doctor: any = await httpClient.get(
-        `${process.env.DOCTOR_SERVICE_URL}/doctor/${updatedBooking.doctorId}`,
-        {
-          headers: { Authorization: req.headers.authorization },
-        },
-      );
+      // const doctor: any = await httpClient.get(
+      //   `${process.env.DOCTOR_SERVICE_URL}/doctor/${updatedBooking.doctorId}`,
+      //   {
+      //     headers: { Authorization: req.headers.authorization },
+      //   },
+      // );
 
       // send notification userId
 
-   await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/notification`, {
-        userId: updatedBooking.userId,
-        message: `Your booking with Dr. ${doctor.data.displayName} has been ${updatedBooking.status}.`,
-      },
-      {
-        headers: { Authorization: req.headers.authorization }
-      }
-    );
+   // await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/notification`, {
+   //      userId: updatedBooking.userId,
+   //      message: `Your booking with Dr. ${doctor.data.displayName} has been ${updatedBooking.status}.`,
+   //    },
+   //    {
+   //      headers: { Authorization: req.headers.authorization }
+   //    }
+   //  );
 
+   //  }
 
-    }
-
-    
 
     res.status(200).json({
       success: true,
