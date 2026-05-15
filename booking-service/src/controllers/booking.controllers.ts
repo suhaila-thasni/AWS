@@ -19,6 +19,8 @@ export const Registeration: any = asyncHandler(
       userId,
       hospitalId,
       doctorId,
+      department,
+      displayName,
       booking_date,
     } = req.body;
 
@@ -95,6 +97,8 @@ export const Registeration: any = asyncHandler(
       hospitalId,
       doctorId,
       booking_date,
+      doctor_name: displayName,
+    doctor_department: department
     });
 
     // ==============================
@@ -148,7 +152,6 @@ export const Registeration: any = asyncHandler(
     return;
   }
 );
-
 
 // GET ONE - GET /booking/:id
 export const getanBooking: any = asyncHandler(
