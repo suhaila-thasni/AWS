@@ -83,7 +83,7 @@ BloodDonor.init(
     modelName: "BloodDonor",
     tableName: "blood_donors",
     timestamps: true,
-    paranoid: true, // Enables soft deletes
+    paranoid: false, // Enables soft deletes
     defaultScope: {
       attributes: { exclude: ["otp", "otpExpiry"] },
     },
