@@ -9,20 +9,23 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
+// Helper to set refresh token cookie
+const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
+    path: "/",
+  });
+};
+
 const APPLE_TEST_NUMBER = "9999999999";
 const APPLE_TEST_OTP = "123456";
 
-// 🩸 Medical Compatibility Matrix (Recipient -> Compatible Donors)
-const COMPATIBILITY_MAP: Record<string, string[]> = {
-  "A+": ["A+", "A-", "O+", "O-"],
-  "A-": ["A-", "O-"],
-  "B+": ["B+", "B-", "O+", "O-"],
-  "B-": ["B-", "O-"],
-  "O+": ["O+", "O-"],
-  "O-": ["O-"],
-  "AB+": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
-  "AB-": ["AB-", "A-", "B-", "O-"],
-};
+
+
+
 
 // Helper for Twilio Client
 const getTwilioClient = () => {
@@ -35,7 +38,6 @@ const getTwilioClient = () => {
 };
 
 // ✅ REGISTER DONOR - POST /donors/register (Authenticated users only)
-
 export const createDonor: any = asyncHandler(async (req: any, res: Response) => {
   const { phone, dateOfBirth, bloodGroup, address, userId } = req.body;
  
@@ -211,9 +213,14 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   await donor.update({ otp: null as any, otpExpiry: null as any });
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
+  const token = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
     expiresIn: "15m"
   });
+  const refreshToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor"}, jwtKey, {
+    expiresIn: "2w"
+  });
+
+  setRefreshTokenCookie(res, refreshToken);
 
   const donorJson = donor.toJSON();
 
@@ -230,64 +237,86 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
 
 // 🔍 GET ALL DONORS (with compatibility filters) - GET /donors
 
-export const getDonors: any = asyncHandler(async (req: Request, res: Response) : Promise<void> => {
+const COMPATIBILITY_MAP: Record<string, string[]> = {
+  "A+": ["A+", "A-", "O+", "O-"],
+  "A-": ["A-", "O-"],
+  "B+": ["B+", "B-", "O+", "O-"],
+  "B-": ["B-", "O-"],
+  "O+": ["O+", "O-"],
+  "O-": ["O-"],
+  "AB+": ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
+  "AB-": ["AB-", "A-", "B-", "O-"],
+};
 
-  let { bloodGroup, pincode, place, userId, country, state, district }: any = req.query;
 
-  // Convert array → string
-  if (Array.isArray(userId)) userId = userId[0];
-  if (Array.isArray(bloodGroup)) bloodGroup = bloodGroup[0];
-  if (Array.isArray(pincode)) pincode = pincode[0];
-  if (Array.isArray(place)) place = place[0];
-  if (Array.isArray(country)) country = country[0];
-  if (Array.isArray(state)) state = state[0];
-  if (Array.isArray(district)) district = district[0];
+
+
+// ✅ handle array query params
+
+export const getDonors = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  let {
+    bloodGroup,
+    pincode,
+    place,
+    userId,
+    country,
+    state,
+    district,
+  }: any = req.query;
+
+ 
+    if (Array.isArray(bloodGroup)) bloodGroup = bloodGroup[0];
+      if (Array.isArray(pincode)) pincode = pincode[0];
+        if (Array.isArray(place)) place = place[0];
+          if (Array.isArray(userId)) userId = userId[0];
+            if (Array.isArray(country)) country = country[0];
+                if (Array.isArray(state)) state = state[0];
+                    if (Array.isArray(district)) district = district[0];
+
+  
 
   const where: any = {};
 
-  // Blood group compatibility
+  // ✅ BLOOD GROUP FILTER (SAFE)
   if (bloodGroup) {
-    const compatibleGroups =
-      COMPATIBILITY_MAP[bloodGroup.toUpperCase()] || [bloodGroup];
 
-    where.bloodGroup = {
-      [Op.in]: compatibleGroups,
-    };
-  }
+      const compatibleGroups = COMPATIBILITY_MAP[bloodGroup.toUpperCase()];      
+
+      if (compatibleGroups && compatibleGroups.length > 0) {
+        where.bloodGroup = {
+          [Op.in]: compatibleGroups,
+        };
+      }
+    }
+
 
   // userId filter
   if (userId) {
-    where.userId = Number(userId);
+    const id = Number(userId);
+    if (!isNaN(id)) {
+      where.userId = id;
+    }
   }
 
-  // Address filters
-  if (pincode) {
-    where["address.pincode"] = pincode;
-  }
+  // address filters (safe nested JSON queries)
+  if (pincode) where["address.pincode"] = pincode;
 
   if (place) {
-    where["address.place"] = {
-      [Op.iLike]: `%${place}%`,
-    };
+    where["address.place"] = { [Op.iLike]: `%${place}%` };
   }
 
   if (country) {
-    where["address.country"] = {
-      [Op.iLike]: `%${country}%`,
-    };
+    where["address.country"] = { [Op.iLike]: `%${country}%` };
   }
 
   if (state) {
-    where["address.state"] = {
-      [Op.iLike]: `%${state}%`,
-    };
+    where["address.state"] = { [Op.iLike]: `%${state}%` };
   }
 
   if (district) {
-    where["address.district"] = {
-      [Op.iLike]: `%${district}%`,
-    };
+    where["address.district"] = { [Op.iLike]: `%${district}%` };
   }
+
 
   const donors = await BloodDonor.findAll({
     where,
@@ -295,25 +324,26 @@ export const getDonors: any = asyncHandler(async (req: Request, res: Response) :
   });
 
   if (!donors.length) {
-  res.status(404).json({
+    res.status(404).json({
       success: false,
       message: "No donors found",
       data: null,
-      error: { code: "NO_DATA_FOUND" },
     });
-      return;
+    return;
   }
 
   res.status(200).json({
     success: true,
     data: donors,
-    error: null,
   });
 });
+
+
 
 // 📄 GET SINGLE DONOR - GET /donors/:id
 export const getSingleDonor: any = asyncHandler(async (req: Request, res: Response) => {
   const donor = await BloodDonor.findByPk(req.params.id);
+
 
   if (!donor) {
     res.status(404).json({
@@ -398,4 +428,49 @@ export const deleteDonor: any = asyncHandler(async (req: Request, res: Response)
     data: null,
     error: null,
   });
+});
+
+// REFRESH TOKEN - POST /donors/refresh
+export const refreshBloodDonorToken: any = asyncHandler(async (req: Request, res: Response) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    res.status(401).json({ success: false, message: "Refresh token missing" });
+    return;
+  }
+
+  const jwtKey = process.env.JWT_SECRET;
+
+  try {
+    const decoded: any = jwt.verify(refreshToken, jwtKey);
+    
+    const donor = await BloodDonor.findByPk(decoded.id);
+
+    if (!donor) {
+      res.status(401).json({ success: false, message: "Invalid refresh token" });
+      return;
+    }
+
+    const newToken = jwt.sign({ id: donor.id, donorId: donor.donorId, userId: donor.userId, role: "bloodDonor" }, jwtKey, {
+      expiresIn: "15m",
+    });
+
+    res.status(200).json({
+      success: true,
+      token: newToken,
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
+  }
+});
+
+// LOGOUT - POST /donors/logout
+export const logout: any = asyncHandler(async (req: Request, res: Response) => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/",
+  });
+  res.status(200).json({ success: true, message: "Logged out successfully" });
 });
