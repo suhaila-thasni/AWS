@@ -41,19 +41,26 @@ export const createDonor: any = asyncHandler(async (req: any, res: Response) => 
  
 
   // 2. Validate User Existence (Cross-Service: user-service)
-  try {
-    await httpClient.get(`{process.env.USER_SERVICE_URL}/users/${userId}`, {
-      headers: { Authorization: req.headers.authorization }
-    });
-  } catch (error: any) {
-    console.error("User validation failed:", error.message);
-    res.status(404).json({
-      success: false,
-      message: `User with ID ${userId} does not exist in the user service.`,
-      error: { code: "USER_NOT_FOUND" }
-    });
-    return;
-  }
+ try {
+  const url = `${process.env.USER_SERVICE_URL}/users/${userId}`;
+
+
+  await httpClient.get(url, {
+    headers: { Authorization: req.headers.authorization }
+  });
+
+
+} catch (error: any) {
+  console.error("User validation failed:", error.message);
+
+  res.status(404).json({
+    success: false,
+    message: `User with ID ${userId} does not exist in the user service.`,
+    error: { code: "USER_NOT_FOUND" }
+  });
+
+  return;
+}
 
   // Clean phone
   const cleanedPhone = phone.replace(/\D/g, "").slice(-10);
@@ -130,7 +137,6 @@ export const createDonor: any = asyncHandler(async (req: any, res: Response) => 
     error: null,
   });
 });
-
 
 // 📱 LOGIN WITH PHONE (OTP REQUEST) - POST /donors/login/phone
 export const loginWithPhone: any = asyncHandler(async (req: Request, res: Response) => {
