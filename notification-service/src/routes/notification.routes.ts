@@ -19,7 +19,7 @@ import {
 const router = Router();
 
 // Apply authentication to all routes
-router.use(authenticate);
+// router.use(authenticate);
 
 // CRUD
 router.post(
