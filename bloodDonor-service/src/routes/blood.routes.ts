@@ -24,9 +24,9 @@ router.post("/donors",  validate(donorSchema),  createDonor);
 
 // 📋 CRUD Routes
 router.get("/donors",  getDonors);
-router.get("/donors/:id",authenticate, validateParams(idParamSchema), checkPermission("donors", "view"), getSingleDonor);
-router.put("/donors/:id",authenticate, validateParams(idParamSchema), checkPermission("donors", "edit"), updateDonor);
-router.delete("/donors/:id",authenticate, validateParams(idParamSchema), checkPermission("donors", "delete"), deleteDonor);
+router.get("/donors/:id", validateParams(idParamSchema),  getSingleDonor);
+router.put("/donors/:id", validateParams(idParamSchema),  updateDonor);
+router.delete("/donors/:id", validateParams(idParamSchema),  deleteDonor);
 
 export default router;
 
