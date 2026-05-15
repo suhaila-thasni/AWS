@@ -19,6 +19,8 @@ interface IBooking {
 
   booking_date: Date;
   consulting_time: string;
+  doctor_name: string;
+  doctor_department: string;
 
   status: "pending" | "accepted" | "declined" | "cancel";
 
@@ -52,7 +54,8 @@ class Booking
   public userId!: number;
   public doctorId!: number;
   public hospitalId!: number;
-
+   public doctor_name: string;
+   public doctor_department: string;
 
   public booking_date!: Date;
   public consulting_time!: string;
@@ -100,6 +103,14 @@ Booking.init(
     doctorId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+    doctor_name: {
+       type: DataTypes.STRING,
+       allowNull: false,
+    },
+    doctor_department:  {
+       type: DataTypes.STRING,
+       allowNull: false,
     },
 
     hospitalId: {
