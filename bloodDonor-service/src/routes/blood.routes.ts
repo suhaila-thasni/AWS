@@ -20,7 +20,7 @@ router.post("/donors/login/phone", validate(phoneLoginSchema), loginWithPhone);
 router.post("/donors/otp", validate(otpSchema), verifyOtp);
 
 // 🛡️ Protected - Only authenticated users can register as donors
-router.post("/donors", authenticate, validate(donorSchema), checkPermission("donors", "create"), createDonor);
+router.post("/donors",  validate(donorSchema),  createDonor);
 
 // 📋 CRUD Routes
 router.get("/donors",  getDonors);
