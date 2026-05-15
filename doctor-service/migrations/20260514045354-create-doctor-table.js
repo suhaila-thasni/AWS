@@ -61,7 +61,7 @@ module.exports = {
         allowNull: true,
       },
 
-      appoimentCount: {
+      appointmentCount: {
         type: Sequelize.INTEGER,
         allowNull: true,
       },
