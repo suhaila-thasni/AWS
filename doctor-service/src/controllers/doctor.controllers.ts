@@ -378,13 +378,14 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 
 // GET ALL - GET /doctors
 
+
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
-    let { id, speciality }: any = req.query;
+    let { hospitalId, speciality }: any = req.query;
   
-if (Array.isArray(id)) {
-      id = id[0];
+if (Array.isArray(hospitalId)) {
+      hospitalId = hospitalId[0];
     }
 
     if (Array.isArray(speciality)) {
@@ -394,8 +395,8 @@ if (Array.isArray(id)) {
     const whereClause: any = {};
 
     // Hospital filter
-    if (id) {
-      whereClause.hospitalId = Number(id);
+    if (hospitalId) {
+      whereClause.hospitalId = Number(hospitalId);
     }
 
     // Speciality filter
