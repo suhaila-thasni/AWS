@@ -85,7 +85,7 @@ Ambulance.init(
     modelName: "Ambulance",
     tableName: "ambulances",
     timestamps: true,
-    paranoid: true, // Enables soft deletes for ambulances
+    paranoid: false, // Enables soft deletes for ambulances
     defaultScope: {
       attributes: { exclude: ["otp", "otpExpiry"] },
     },
