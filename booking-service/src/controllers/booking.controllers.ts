@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // REGISTER - POST /boooking/register
-// REGISTER - POST /booking/register
+
 export const Registeration: any = asyncHandler(
   async (req: any, res: Response): Promise<void> => {
     const {
@@ -16,27 +16,14 @@ export const Registeration: any = asyncHandler(
       patient_name,
       patient_place,
       patient_phone,
-      userId: bodyUserId,
+      userId,
       hospitalId,
       doctorId,
       booking_date,
     } = req.body;
 
-    const tokenUserId = req.user.id;
-    const authHeader = req.headers.authorization;
-
-    // ==============================
-    // 1. SECURITY CHECK
-    // ==============================
-    if (bodyUserId && Number(bodyUserId) !== Number(tokenUserId)) {
-      res.status(403).json({
-        success: false,
-        message: "User ID mismatch",
-      });
-      return;
-    }
-
-    const userId = tokenUserId;
+    
+    
     const errors: string[] = [];
 
     // ==============================
@@ -45,7 +32,7 @@ export const Registeration: any = asyncHandler(
     try {
       await httpClient.get(
         `${process.env.USER_SERVICE_URL}/users/${userId}`,
-        { headers: { Authorization: authHeader } }
+        { headers: { Authorization: req.headers.authorization } }
       );
     } catch {
       errors.push("User not found");
@@ -57,7 +44,7 @@ export const Registeration: any = asyncHandler(
     try {
       await httpClient.get(
         `${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`,
-        { headers: { Authorization: authHeader } }
+        { headers: { Authorization: req.headers.authorization } }
       );
     } catch {
       errors.push("Hospital not found");
@@ -71,7 +58,7 @@ export const Registeration: any = asyncHandler(
     try {
       const doctorRes = await httpClient.get(
         `${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`,
-        { headers: { Authorization: authHeader } }
+        { headers: { Authorization: req.headers.authorization } }
       );
 
       // IMPORTANT FIX: correct axios structure
@@ -127,7 +114,7 @@ export const Registeration: any = asyncHandler(
           doctorId,
           message: `New booking for Dr. ${doctorName} on ${booking_date}`,
         },
-        { headers: { Authorization: authHeader } }
+        { headers: { Authorization: req.headers.authorization} }
       ),
 
       // BullMQ Service
@@ -138,7 +125,7 @@ export const Registeration: any = asyncHandler(
           hospitalId,
           message: `New booking for Dr. ${doctorName} on ${booking_date}`,
         },
-        { headers: { Authorization: authHeader } }
+        { headers: { Authorization: req.headers.authorization }}
       ),
     ]);
 
@@ -161,6 +148,7 @@ export const Registeration: any = asyncHandler(
     return;
   }
 );
+
 
 // GET ONE - GET /booking/:id
 export const getanBooking: any = asyncHandler(
