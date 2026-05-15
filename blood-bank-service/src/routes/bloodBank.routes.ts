@@ -13,11 +13,11 @@ import { checkPermission } from "../middleware/role.middleware";
 const router = Router();
 
 // CRUD — all routes require authentication
-router.post("/blood-banks", authenticate, checkPermission("blood_bank", "create"), createOrUpdateStock);
-router.get("/blood-banks", authenticate,  checkPermission("blood_bank", "create"), getAllStock);
-router.get("/blood-banks/hospital/:hospitalId",  checkPermission("blood_bank", "create"), authenticate, getStocksByHospitalId);
-router.get("/blood-banks/:id", authenticate,  checkPermission("blood_bank", "create"), getStockById);
-router.put("/blood-banks/:id", authenticate,  checkPermission("blood_bank", "create"), updateStockById);
-router.delete("/blood-banks/:id", authenticate,  checkPermission("blood_bank", "create"), deleteStockById);
+router.post("/blood-banks",  createOrUpdateStock);
+router.get("/blood-banks",    "create"), getAllStock);
+router.get("/blood-banks/hospital/:hospitalId",  getStocksByHospitalId);
+router.get("/blood-banks/:id", getStockById);
+router.put("/blood-banks/:id", updateStockById);
+router.delete("/blood-banks/:id",  deleteStockById);
 
 export default router;
