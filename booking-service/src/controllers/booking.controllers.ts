@@ -296,10 +296,12 @@ export const bookingDelete: any = asyncHandler(
 // GET ALL - GET /booking
 
 export const getBookings = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { userId, hospitalId }: any = req.query;
+  let { userId, hospitalId, doctorId }: any = req.query;
 
   if (Array.isArray(userId)) userId = userId[0];
   if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+    if (Array.isArray(doctorId)) doctorId = doctorId[0];
+
 
   const whereClause: any = {};
 
@@ -309,6 +311,10 @@ export const getBookings = asyncHandler(async (req: Request, res: Response): Pro
 
   if (hospitalId !== undefined) {
     whereClause.hospitalId = Number(hospitalId);
+  }
+
+    if (doctorId !== undefined) {
+    whereClause.doctorId = Number(doctorId);
   }
 
   const booking = await Booking.findAll({
