@@ -29,7 +29,7 @@ router.post("/ambulance/otp", validate(verifyOtpSchema), verifyOtp);
 // CRUD
 router.get("/ambulance", getAmbulaces);
 router.get("/ambulance/:id",  validateParams(idParamSchema), getanAmbulace);
-router.put("/ambulance/:id", authenticate, validateParams(idParamSchema), validate(updateSchema),checkPermission("ambulance", "edit"), updateData);
+router.put("/ambulance/:id", authenticate, validateParams(idParamSchema), validate(updateSchema), updateData);
 router.delete("/ambulance/:id", authenticate, validateParams(idParamSchema),checkPermission("ambulance", "delete"), ambulanceDelete);
 
 export default router;
