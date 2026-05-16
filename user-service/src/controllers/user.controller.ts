@@ -5,22 +5,18 @@ import Patient from "../models/patient.model";
 import PatientVitals from "../models/patientVitals.model";
 import User from "../models/user.model";
 import jwt from "jsonwebtoken";
-import { generateToken, generateRefreshToken } from "../services/jwt.service";
-import { publishEvent } from "../events/publisher";
+import { generateToken } from "../services/jwt.service";
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    // secure: process.env.NODE_ENV === "production"
-    // ,
     secure:false,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
   });
 };
-
 
 // --- USER CONTROLLERS ---
 
@@ -175,10 +171,10 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
   try {
     // 1. Extract Patient Info
     const {
-      firstName, middleName, lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob, company, mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, country, city, state, pinCode,
-      referredBy, department, referredOn, notes, email, profileImage, userId
+      firstName,  lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob, mobileNumber, emergencyNumber,
+      guardianName, addressLine1, addressLine2, location, hospitalId,
+      referredBy, department, referredOn, notes, email,  userId
     } = req.body;
 
     // 2. Extract Vitals Info (if any)
@@ -197,10 +193,10 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 
     // 4. Create Patient
     const patient = await Patient.create({
-      firstName, middleName, lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob, company, mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, country, city, state, pinCode,
-      referredBy, department, referredOn, notes, email, profileImage, userId
+      firstName, lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob,  mobileNumber, emergencyNumber,
+      guardianName, addressLine1, addressLine2, location,
+      referredBy, department, referredOn, notes, email,  userId, hospitalId
     }, { transaction: t });
 
     // 4. If any vitals field is provided, create a vitals record
@@ -231,17 +227,6 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
         { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
       ],
     });
-
-    try {
-      await publishEvent("patient_events", "PATIENT_REGISTERED", {
-        patientId: result?.id,
-        userId: userId || null,
-        patientName: `${firstName} ${lastName}`,
-        phone: mobileNumber
-      });
-    } catch (err) {
-      console.error("Failed to publish PATIENT_REGISTERED event:", err);
-    }
 
     res.status(201).json({
       success: true,
@@ -307,10 +292,10 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
 
     // 1. Update Patient Profile Fields
     const {
-      firstName, middleName, lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob, company, mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, country, city, state, pinCode,
-      referredBy, department, referredOn, notes, email, profileImage, userId
+      firstName,  lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob,  mobileNumber, emergencyNumber,
+      guardianName, addressLine1, addressLine2, location, hospitalId,
+      referredBy, department, referredOn, notes, email,  userId
     } = req.body;
 
     // 1.5 Validate userId (if provided)
@@ -323,10 +308,10 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
     }
 
     await patient.update({
-      firstName, middleName, lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob, company, mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, country, city, state, pinCode,
-      referredBy, department, referredOn, notes, email, profileImage, userId
+      firstName,  lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob,  mobileNumber, emergencyNumber,
+      guardianName, addressLine1, addressLine2, location, hospitalId,
+      referredBy, department, referredOn, notes, email,  userId
     }, { transaction: t });
 
     // 2. Check for NEW Vitals in the same request
@@ -392,14 +377,13 @@ export const deletePatient: any = asyncHandler(async (req: Request, res: Respons
 export const refreshUserToken: any = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
 
-  console.log("refreshToken", refreshToken);
 
   if (!refreshToken) {
     res.status(401).json({ success: false, message: "Refresh token missing" });
     return;
   }
 
-  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
+  const jwtKey = process.env.JWT_SECRET;
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
@@ -410,7 +394,7 @@ export const refreshUserToken: any = asyncHandler(async (req: Request, res: Resp
       return;
     }
 
-    const newToken = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+    const newToken = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: false });
 
     res.status(200).json({
       success: true,
