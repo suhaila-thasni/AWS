@@ -6,6 +6,9 @@ interface IRolePermission {
   id: number;
   roleId: number;
   permissionId: number;
+  pharmacyId: number;
+  hospitalId: number;
+  labId: number;
 }
 
 class RolePermission
@@ -15,6 +18,9 @@ class RolePermission
   public id!: number;
   public roleId!: number;
   public permissionId!: number;
+  public pharmacyId: number;
+  public hospitalId: number;
+  public labId: number;
 }
 
 RolePermission.init(
@@ -24,6 +30,21 @@ RolePermission.init(
       autoIncrement: true,
       primaryKey: true,
     },
+
+      hospitalId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
+    labId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+      pharmacyId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
 
     roleId: {
       type: DataTypes.INTEGER,
