@@ -2,43 +2,73 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Rolepermission from "../models/rolepermission.model";
 import { publishEvent } from "../events/publisher";
+import { UniqueConstraintError } from "sequelize/lib/errors/index";
 
 // REGISTER - POST /Rolepermission
 
-export const createRolepermission: any =
-  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const createRolepermission: any = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
 
-    const { roleId, permissionIds, pharmacyId, hospitalId, labId } = req.body;
+    try {
 
-    if (!roleId || !permissionIds) {
-     res.status(400).json({
-        message: "roleId and permissionIds required",
-      });
-    }
+      const {
+        roleId,
+        permissionIds,
+        pharmacyId,
+        hospitalId,
+        labId,
+      } = req.body;
 
-    if (!Array.isArray(permissionIds)) {
-      res.status(400).json({
-        message: "permissionIds must be array",
-      });
-    }
+      if (!roleId || !permissionIds) {
+        res.status(400).json({
+          success: false,
+          message: "roleId and permissionIds required",
+        });
+        return;
+      }
 
-    const rolePermissions =
-      permissionIds.map((pid: number) => ({
+      if (!Array.isArray(permissionIds)) {
+        res.status(400).json({
+          success: false,
+          message: "permissionIds must be array",
+        });
+        return;
+      }
+
+      const rolePermissions = permissionIds.map((pid: number) => ({
         roleId,
         permissionId: pid,
-        pharmacyId, hospitalId, labId 
+        pharmacyId,
+        hospitalId,
+        labId,
       }));
 
-    const result =
-      await Rolepermission.bulkCreate(rolePermissions);
+      const result = await Rolepermission.bulkCreate(rolePermissions);
 
-    res.status(201).json({
-      success: true,
-      message: "Role permissions assigned",
-      data: result,
-    });
+      res.status(201).json({
+        success: true,
+        message: "Role permissions assigned",
+        data: result,
+      });
 
-  });
+    } catch (error: any) {
+
+      if (error instanceof UniqueConstraintError) {
+        res.status(400).json({
+          success: false,
+          message: "This role already has this permission",
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: error.message || "Internal server error",
+      });
+    }
+  }
+);
+
 
 
 
