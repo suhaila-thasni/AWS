@@ -8,7 +8,7 @@ permissionDelete,
 updateData
  
 } from "../controllers/permission.controllers";
-import { authenticate } from "../middleware/authenticate";
+// import { authenticate } from "../middleware/authenticate";
 
 const router = Router();
 
