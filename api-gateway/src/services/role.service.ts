@@ -21,7 +21,7 @@ breaker.fallback(() => {
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Only strip the global /api prefix. The microservice still needs /review or /rating to route internally.
-    const cleanedPath = req.originalUrl.replace("/api/role", "/role").replace("/api/permission", "/permission").replace("/api/rolepermission", "/rolepermission").replace("/api/check-permission", "/check-permission");
+    const cleanedPath = req.originalUrl.replace("/api/role", "/role").replace("/api/permission", "/permission").replace("/api/rolepermission", "/rolepermission");
     const url = `${SERVICES.ROLE_SERVICE}${cleanedPath}`;
 
     logger.info("Forwarding role request", { 
