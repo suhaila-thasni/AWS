@@ -17,11 +17,11 @@ const router = Router();
 
 // CRUD
 
-router.post("/permission", authenticate, createPermission);
-router.get("/permission", authenticate, getPermission);
-router.get("/permission/:id", authenticate, getanPermission);
-router.put("/permission/:id", authenticate, updateData);
-router.delete("/permission/:id", authenticate, permissionDelete);
+router.post("/permission",  createPermission);
+router.get("/permission",  getPermission);
+router.get("/permission/:id", getanPermission);
+router.put("/permission/:id",  updateData);
+router.delete("/permission/:id",  permissionDelete);
 router.post(
   "/check-permission",
   checkPermissionService
