@@ -22,6 +22,7 @@ export const Registeration: any = asyncHandler(
       department,
       displayName,
       booking_date,
+      consulting_time
     } = req.body;
 
     
@@ -98,7 +99,8 @@ export const Registeration: any = asyncHandler(
       doctorId,
       booking_date,
       doctor_name: displayName,
-    doctor_department: department
+    doctor_department: department,
+      consulting_time
     });
 
     // ==============================
