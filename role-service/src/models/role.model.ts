@@ -7,6 +7,7 @@ interface IRole {
   description?: string;
   hospitalId?: number;
   labId?: number;
+  pharmacyId?: number;
   isActive: boolean;
 }
 
@@ -23,6 +24,7 @@ class Role
   public hospitalId?: number;
   public labId?: number;
   public isActive!: boolean;
+  public pharmacyId?: number;
 }
 
 Role.init(
@@ -48,6 +50,10 @@ Role.init(
     },
 
     labId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+       pharmacyId: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
