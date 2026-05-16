@@ -15,6 +15,7 @@ interface IBloodDonor {
     place: string;
     pincode: number;
   };
+  name: string;
   otp?: string;
   otpExpiry?: Date;
   deletedAt?: Date;
@@ -31,10 +32,16 @@ class BloodDonor extends Model<IBloodDonor> implements IBloodDonor {
   public otp?: string;
   public otpExpiry?: Date;
   public readonly deletedAt!: Date;
+  public name: string;
 }
 
 BloodDonor.init(
   {
+      name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -75,8 +82,7 @@ BloodDonor.init(
     otpExpiry: {
       type: DataTypes.DATE,
       allowNull: true,
-    },
-    
+    }
   },
   {
     sequelize,
