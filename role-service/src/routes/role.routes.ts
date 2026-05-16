@@ -7,7 +7,7 @@ roleDelete,
 updateData
  
 } from "../controllers/role.controllers";
-import { authenticate } from "../middleware/authenticate";
+// import { authenticate } from "../middleware/authenticate";
 
 const router = Router();
 
