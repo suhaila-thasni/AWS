@@ -2,14 +2,13 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Rolepermission from "../models/rolepermission.model";
 import { publishEvent } from "../events/publisher";
-import axios from "axios";
 
 // REGISTER - POST /Rolepermission
 
 export const createRolepermission: any =
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-    const { roleId, permissionIds } = req.body;
+    const { roleId, permissionIds, pharmacyId, hospitalId, labId } = req.body;
 
     if (!roleId || !permissionIds) {
      res.status(400).json({
@@ -27,24 +26,16 @@ export const createRolepermission: any =
       permissionIds.map((pid: number) => ({
         roleId,
         permissionId: pid,
+        pharmacyId, hospitalId, labId 
       }));
 
     const result =
       await Rolepermission.bulkCreate(rolePermissions);
-    await publishEvent(
-  "rolepermission_events",
-  "ROLEPERMISSION_CREATED",
-  {
-    roleId,
-    permissionIds,
-  }
-);
-
 
     res.status(201).json({
       success: true,
       message: "Role permissions assigned",
-      data: createRolepermission,
+      data: result,
     });
 
   });
@@ -143,7 +134,35 @@ export const rolepermissionDelete: any = asyncHandler(async (req: Request, res: 
 
 // GET ALL - GET /Rolepermission
 export const getRolepermission: any = asyncHandler(async (req: Request, res: Response) => {
-  const rolepermission = await Rolepermission.findAll();
+
+
+   let { hospitalId, labId, pharmacyId }: any = req.query;
+
+    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+        if (Array.isArray(labId)) labId = labId[0];
+    if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
+
+
+      const whereClause: any = {};
+
+
+  if (hospitalId !== undefined) {
+    whereClause.hospitalId = Number(hospitalId);
+  }
+
+    if (labId !== undefined) {
+    whereClause.labId = Number(labId);
+  }
+
+    if (pharmacyId !== undefined) {
+    whereClause.pharmacyId = Number(pharmacyId);
+  }
+
+  const rolepermission = await Rolepermission.findAll({
+    where: whereClause,
+  });
+
+
 
   if (rolepermission.length === 0) {
     res.status(404).json({
@@ -162,5 +181,6 @@ export const getRolepermission: any = asyncHandler(async (req: Request, res: Res
     error: null,
   });
 });
+
 
 
