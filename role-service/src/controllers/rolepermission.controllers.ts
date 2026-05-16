@@ -58,7 +58,6 @@ export const createRolepermission: any = asyncHandler(
 
     } catch (error: any) {
 
-      console.log("ERROR =>", error);
 
       // ✅ Duplicate unique error
       if (
