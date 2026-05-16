@@ -1,17 +1,24 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/db";
-import PatientVitals from "./patientVitals.model";
 import User from "./user.model";
 
+
+interface ILocation {
+  country?: string;
+  state?: string;
+  district?: string;
+  place: string;
+  pincode: number;
+}
 
 interface IPatient {
   id: number;
   patientId?: string; // Virtual ID
-  profileImage?: any;
+  
   userId?: number;
+  hospitalId: number;
 
   firstName: string;
-  middleName?: string;
   lastName: string;
 
   bloodGroup: string;
@@ -22,7 +29,6 @@ interface IPatient {
   age?: number;
   dob?: Date;
 
-  company?: string;
 
   mobileNumber: string;
   emergencyNumber?: string;
@@ -31,14 +37,12 @@ interface IPatient {
   addressLine1?: string;
   addressLine2?: string;
 
-  country?: string;
-  city?: string;
-  state?: string;
-  pinCode?: string;
 
   referredBy?: number;
   department?: number;
   referredOn?: Date;
+
+  location: ILocation;
 
   notes?: string;
 
@@ -52,11 +56,10 @@ interface IPatient {
 class Patient extends Model<IPatient> implements IPatient {
   public id!: number;
   public readonly patientId!: string;
-  public profileImage!: any;
   public userId!: number;
+  public hospitalId: number;
 
   public firstName!: string;
-  public middleName!: string;
   public lastName!: string;
 
   public bloodGroup!: string;
@@ -67,7 +70,7 @@ class Patient extends Model<IPatient> implements IPatient {
   public age!: number;
   public dob!: Date;
 
-  public company!: string;
+  
 
   public mobileNumber!: string;
   public emergencyNumber!: string;
@@ -76,10 +79,6 @@ class Patient extends Model<IPatient> implements IPatient {
   public addressLine1!: string;
   public addressLine2!: string;
 
-  public country!: string;
-  public city!: string;
-  public state!: string;
-  public pinCode!: string;
 
   public referredBy!: number;
   public department!: number;
@@ -89,6 +88,7 @@ class Patient extends Model<IPatient> implements IPatient {
 
   public email!: string;
   public password!: string;
+  public location: ILocation;
 
   public readonly vitals?: any[];
 }
@@ -111,7 +111,7 @@ Patient.init(
 
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
 
       references: {
         model: "users",
@@ -120,17 +120,18 @@ Patient.init(
       onDelete: "CASCADE",
     },
 
-    // 🔥 Image (JSONB)
-    profileImage: {
-      type: DataTypes.JSONB,
+      hospitalId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
+
 
     // Basic Info
     firstName: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    middleName: DataTypes.STRING,
+
     lastName: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -156,10 +157,16 @@ Patient.init(
       allowNull: false,
     },
 
-    age: DataTypes.INTEGER,
-    dob: DataTypes.DATE,
+    age: {
+      type:  DataTypes.INTEGER, 
+      allowNull: false
+    }, 
+    
+    dob: {
+      type: DataTypes.DATE,
+      allowNull: false
+    }, 
 
-    company: DataTypes.STRING,
 
     // Contact
     mobileNumber: {
@@ -170,13 +177,17 @@ Patient.init(
     emergencyNumber: DataTypes.STRING,
     guardianName: DataTypes.STRING,
 
-    addressLine1: DataTypes.STRING,
+    addressLine1: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }, 
     addressLine2: DataTypes.STRING,
 
-    country: DataTypes.STRING,
-    city: DataTypes.STRING,
-    state: DataTypes.STRING,
-    pinCode: DataTypes.STRING,
+
+    location: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+    },
 
     // 🔥 Foreign Keys
     referredBy: {
@@ -184,7 +195,8 @@ Patient.init(
     },
 
     department: {
-      type: DataTypes.INTEGER, // Department ID
+      type: DataTypes.INTEGER, // Department ID 
+      allowNull: false
     },
 
     referredOn: DataTypes.DATE,
@@ -193,14 +205,15 @@ Patient.init(
 
     email: {
       type: DataTypes.STRING,
+      allowNull: true,
       validate: {
         isEmail: true,
       },
     },
-
-
-
-    password: DataTypes.STRING,
+    password: {
+      type: DataTypes.STRING,
+      allowNull: true
+    }, 
   },
   {
     sequelize,
@@ -208,7 +221,16 @@ Patient.init(
     tableName: "patients",
     timestamps: true,
     paranoid: true,
+
+      indexes: [
+      {
+        unique: true,
+        fields: ["userId", "hospitalId"],
+      },
+    ],
   }
+
+  
 );
 
 // 🔗 Associations: One User → Many Patients
