@@ -262,6 +262,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     country,
     state,
     district,
+    name
   }: any = req.query;
 
  
@@ -272,6 +273,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
             if (Array.isArray(country)) country = country[0];
                 if (Array.isArray(state)) state = state[0];
                     if (Array.isArray(district)) district = district[0];
+                       if (Array.isArray(name)) name = name[0];
 
   
 
@@ -297,6 +299,8 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
       where.userId = id;
     }
   }
+
+      if (name) where.name = name;
 
   // address filters (safe nested JSON queries)
   if (pincode) where["address.pincode"] = pincode;
