@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Rolepermission from "../models/rolepermission.model";
 import { publishEvent } from "../events/publisher";
-import { UniqueConstraintError } from "sequelize/lib/errors/index";
 
 // REGISTER - POST /Rolepermission
 
@@ -19,6 +18,7 @@ export const createRolepermission: any = asyncHandler(
         labId,
       } = req.body;
 
+      // ✅ Validation
       if (!roleId || !permissionIds) {
         res.status(400).json({
           success: false,
@@ -27,6 +27,7 @@ export const createRolepermission: any = asyncHandler(
         return;
       }
 
+      // ✅ permissionIds must array
       if (!Array.isArray(permissionIds)) {
         res.status(400).json({
           success: false,
@@ -35,25 +36,36 @@ export const createRolepermission: any = asyncHandler(
         return;
       }
 
+      // ✅ Create array data
       const rolePermissions = permissionIds.map((pid: number) => ({
         roleId,
         permissionId: pid,
-        pharmacyId,
-        hospitalId,
-        labId,
+        pharmacyId: pharmacyId || null,
+        hospitalId: hospitalId || null,
+        labId: labId || null,
       }));
 
+      // ✅ Insert data
       const result = await Rolepermission.bulkCreate(rolePermissions);
 
       res.status(201).json({
         success: true,
-        message: "Role permissions assigned",
+        message: "Role permissions assigned successfully",
         data: result,
       });
 
+      return;
+
     } catch (error: any) {
 
-      if (error instanceof UniqueConstraintError) {
+      console.log("ERROR =>", error);
+
+      // ✅ Duplicate unique error
+      if (
+        error.name === "SequelizeUniqueConstraintError" ||
+        error.name === "SequelizeBulkRecordError" ||
+        error?.parent?.code === "23505"
+      ) {
         res.status(400).json({
           success: false,
           message: "This role already has this permission",
@@ -61,15 +73,25 @@ export const createRolepermission: any = asyncHandler(
         return;
       }
 
+      // ✅ Foreign key error
+      if (error?.parent?.code === "23503") {
+        res.status(400).json({
+          success: false,
+          message: "Invalid roleId or permissionId",
+        });
+        return;
+      }
+
+      // ✅ Generic error
       res.status(500).json({
         success: false,
         message: error.message || "Internal server error",
       });
+
+      return;
     }
   }
 );
-
-
 
 
 // GET ONE - GET /Rolepermission/:id
