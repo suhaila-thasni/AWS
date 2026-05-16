@@ -61,6 +61,12 @@ RolePermission.init(
     modelName: "RolePermission",
     tableName: "role_permissions",
     timestamps: false,
+    indexes: [
+  {
+    unique: true,
+    fields: ["roleId", "permissionId"],
+  },
+],
   }
 );
 
