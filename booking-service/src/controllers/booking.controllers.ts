@@ -310,6 +310,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response): Pro
 
   const booking = await Booking.findAll({
     where: whereClause,
+    order: [["createdAt", "DESC"]],
   });
 
   if (!booking.length) {
