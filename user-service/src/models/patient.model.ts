@@ -39,7 +39,7 @@ interface IPatient {
 
 
   referredBy?: number;
-  department?: number;
+  department?: string;
   referredOn?: Date;
 
   location: ILocation;
@@ -81,7 +81,7 @@ class Patient extends Model<IPatient> implements IPatient {
 
 
   public referredBy!: number;
-  public department!: number;
+  public department!: string;
   public referredOn!: Date;
 
   public notes!: string;
@@ -192,10 +192,11 @@ Patient.init(
     // 🔥 Foreign Keys
     referredBy: {
       type: DataTypes.INTEGER, // Doctor ID
+      allowNull: true
     },
 
     department: {
-      type: DataTypes.INTEGER, // Department ID 
+      type: DataTypes.STRING, // Department ID 
       allowNull: false
     },
 
