@@ -20,6 +20,6 @@ router.post("/booking", Registeration);
 router.get("/booking", getBookings);
 router.get("/booking/:id", authenticate, checkPermission("booking", "view" ), getanBooking);
 router.put("/booking/:id",  updateData);
-router.delete("/booking/:id", authenticate, checkPermission("booking", "delete" ), bookingDelete);
+router.delete("/booking/:id", bookingDelete);
 
 export default router;
