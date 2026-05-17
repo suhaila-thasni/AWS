@@ -474,6 +474,7 @@ export const getStaffs = asyncHandler(async (req: Request, res: Response): Promi
 
   const staff = await Staff.findAll({
     where: whereClause,
+     order: [["createdAt", "ASC"]],
   });
 
   if (staff.length === 0) {
