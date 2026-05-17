@@ -184,54 +184,63 @@ export const rolepermissionDelete: any = asyncHandler(async (req: Request, res: 
 });
 
 // GET ALL - GET /Rolepermission
-export const getRolepermission: any = asyncHandler(async (req: Request, res: Response) => {
+export const getRolepermission: any = asyncHandler(
+  async (req: Request, res: Response) : Promise<void> => {
 
+    let { hospitalId, labId, pharmacyId, roleId }: any = req.query;
 
-   let { hospitalId, labId, pharmacyId }: any = req.query;
+    // Handle array query params
+    hospitalId = Array.isArray(hospitalId) ? hospitalId[0] : hospitalId;
+    labId = Array.isArray(labId) ? labId[0] : labId;
+    pharmacyId = Array.isArray(pharmacyId) ? pharmacyId[0] : pharmacyId;
+    roleId = Array.isArray(roleId) ? roleId[0] : roleId;
 
-    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-        if (Array.isArray(labId)) labId = labId[0];
-    if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
+    const whereClause: any = {};
 
+    // Dynamic filters
+    if (hospitalId) {
+      whereClause.hospitalId = Number(hospitalId);
+    }
 
-      const whereClause: any = {};
+    if (labId) {
+      whereClause.labId = Number(labId);
+    }
 
+    if (pharmacyId) {
+      whereClause.pharmacyId = Number(pharmacyId);
+    }
 
-  if (hospitalId !== undefined) {
-    whereClause.hospitalId = Number(hospitalId);
-  }
+    if (roleId) {
+      whereClause.roleId = Number(roleId);
+    }
 
-    if (labId !== undefined) {
-    whereClause.labId = Number(labId);
-  }
-
-    if (pharmacyId !== undefined) {
-    whereClause.pharmacyId = Number(pharmacyId);
-  }
-
-  const rolepermission = await Rolepermission.findAll({
-    where: whereClause,
-  });
-
-
-
-  if (rolepermission.length === 0) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
+    const rolepermission = await Rolepermission.findAll({
+      where: whereClause,
+      order: [["id", "DESC"]],
     });
-    return;
-  }
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: rolepermission,
-    error: null,
-  });
-});
+    if (rolepermission.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        data: [],
+        error: {
+          code: "NO_DATA_FOUND",
+          details: null,
+        },
+      });
+       return;
+    }
+
+   res.status(200).json({
+      success: true,
+      status: "Success",
+      data: rolepermission,
+      error: null,
+    });
+     return;
+  }
+);
 
 
 
