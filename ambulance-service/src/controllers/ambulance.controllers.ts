@@ -6,6 +6,7 @@ import twilio from "twilio";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { httpClient } from "../utils/httpClient";
+import { Op, Sequelize } from "sequelize";
 dotenv.config();
 
 // Helper to set refresh token cookie
@@ -305,39 +306,126 @@ export const ambulanceDelete: any = asyncHandler(async (req: Request, res: Respo
 // GET ALL - GET /ambulance
 
 
-export const getAmbulaces = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { userId, hospitalId }: any = req.query;
 
-  if (Array.isArray(userId)) userId = userId[0];
-  if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+export const getAmbulaces = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    let {
+      userId,
+      hospitalId,
+      name,
+      country,
+      state,
+      place,
+      district,
+      pincode,
+    }: any = req.query;
 
-  const whereClause: any = {};
+    // Handle array query params
+    if (Array.isArray(userId)) userId = userId[0];
+    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+    if (Array.isArray(country)) country = country[0];
+    if (Array.isArray(state)) state = state[0];
+    if (Array.isArray(district)) district = district[0];
+    if (Array.isArray(name)) name = name[0];
+    if (Array.isArray(place)) place = place[0];
+    if (Array.isArray(pincode)) pincode = pincode[0];
 
-  if (userId !== undefined) {
-    whereClause.userId = Number(userId);
-  }
+    const where: any = {};
 
-  if (hospitalId !== undefined) {
-    whereClause.hospitalId = Number(hospitalId);
-  }
+    // Integer filters (safe)
+    if (userId && !isNaN(Number(userId))) {
+      where.userId = Number(userId);
+    }
 
-  const ambulance = await Ambulance.findAll({
-    where: whereClause,
-  });
+    if (hospitalId && !isNaN(Number(hospitalId))) {
+      where.hospitalId = Number(hospitalId);
+    }
 
-  if (!ambulance.length) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
+    // Name filter
+    if (name) {
+      where.serviceName = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+    // JSONB address filters
+    const andConditions: any[] = [];
+
+    if (pincode && !isNaN(Number(pincode))) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.pincode"), "text"),
+          String(pincode)
+        )
+      );
+    }
+
+    if (place) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.place"), "text"),
+          {
+            [Op.iLike]: `%${place}%`,
+          }
+        )
+      );
+    }
+
+    if (country) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.country"), "text"),
+          {
+            [Op.iLike]: `%${country}%`,
+          }
+        )
+      );
+    }
+
+    if (state) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.state"), "text"),
+          {
+            [Op.iLike]: `%${state}%`,
+          }
+        )
+      );
+    }
+
+    if (district) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.district"), "text"),
+          {
+            [Op.iLike]: `%${district}%`,
+          }
+        )
+      );
+    }
+
+    // Add AND conditions
+    if (andConditions.length > 0) {
+      where[Op.and] = andConditions;
+    }
+
+    const ambulance = await Ambulance.findAll({
+      where,
+      order: [["createdAt", "DESC"]],
     });
-    return;
+
+    if (!ambulance.length) {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        data: null,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: ambulance,
+    });
   }
-
-  res.status(200).json({
-    success: true,
-    data: ambulance,
-  });
-});
-
-
+);
