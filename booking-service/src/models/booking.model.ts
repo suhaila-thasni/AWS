@@ -154,7 +154,7 @@ Booking.init(
   {
     sequelize,
     modelName: "Booking",
-    tableName: "booking",
+    tableName: "bookings",
     timestamps: true,
   }
 );
