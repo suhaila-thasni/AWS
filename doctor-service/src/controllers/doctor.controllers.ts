@@ -408,6 +408,7 @@ if (Array.isArray(hospitalId)) {
 
     const doctors = await Doctor.findAll({
       where: whereClause,
+       order: [["createdAt", "ASC"]],
     });
 
     if (doctors.length === 0) {
