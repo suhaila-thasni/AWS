@@ -287,11 +287,18 @@ export const bookingDelete: any = asyncHandler(
 // GET ALL - GET /booking
 
 export const getBookings = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { userId, hospitalId, doctorId }: any = req.query;
+  let { userId, hospitalId, doctorId, status, patient_name, doctor_name, phone,  patientId, department  }: any = req.query;
 
   if (Array.isArray(userId)) userId = userId[0];
   if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
     if (Array.isArray(doctorId)) doctorId = doctorId[0];
+      if (Array.isArray(status)) status = status[0];
+         if (Array.isArray(patient_name)) patient_name = patient_name[0];
+            if (Array.isArray(doctor_name)) doctor_name = doctor_name[0];
+               if (Array.isArray(phone)) phone = phone[0];
+                  if (Array.isArray(patientId)) patientId = patientId[0];
+                        if (Array.isArray(department)) department = department[0];
+
 
 
   const whereClause: any = {};
@@ -308,9 +315,38 @@ export const getBookings = asyncHandler(async (req: Request, res: Response): Pro
     whereClause.doctorId = Number(doctorId);
   }
 
+     if (patientId !== undefined) {
+    whereClause.patientId = Number(patientId);
+  }
+
+      if (department !== undefined) {
+    whereClause.doctor_department = department;
+  }
+
+
+    if (status !== undefined) {
+    whereClause.status = status;
+  }
+
+
+    if (patient_name !== undefined) {
+    whereClause.patient_name = patient_name;
+  }
+
+
+    if (phone !== undefined) {
+    whereClause.patient_phone = phone;
+  }
+
+  
+    if (doctor_name !== undefined) {
+    whereClause.doctor_name = doctor_name;
+  }
+
+
   const booking = await Booking.findAll({
     where: whereClause,
-    order: [["createdAt", "DESC"]],
+      order: [["createdAt", "DESC"]],
   });
 
   if (!booking.length) {
