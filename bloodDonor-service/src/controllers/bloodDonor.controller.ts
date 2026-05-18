@@ -39,7 +39,7 @@ const getTwilioClient = () => {
 
 // ✅ REGISTER DONOR - POST /donors/register (Authenticated users only)
 export const createDonor: any = asyncHandler(async (req: any, res: Response) => {
-  const { phone, dateOfBirth, bloodGroup, address, userId } = req.body;
+  const { phone, dateOfBirth, bloodGroup, address, userId, name } = req.body;
  
 
   // 2. Validate User Existence (Cross-Service: user-service)
@@ -124,6 +124,7 @@ export const createDonor: any = asyncHandler(async (req: any, res: Response) => 
     bloodGroup,
     address,
     userId,
+    name,
   } as any);
 
   await publishEvent("blood_events", "DONOR_REGISTERED", {
@@ -262,7 +263,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     country,
     state,
     district,
-    name
+    name,
   }: any = req.query;
 
  
@@ -273,7 +274,8 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
             if (Array.isArray(country)) country = country[0];
                 if (Array.isArray(state)) state = state[0];
                     if (Array.isArray(district)) district = district[0];
-                       if (Array.isArray(name)) name = name[0];
+                        if (Array.isArray(name)) name = name[0];
+
 
   
 
@@ -300,7 +302,8 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     }
   }
 
-      if (name) where.name = name;
+
+    if (name) where.name = name;
 
   // address filters (safe nested JSON queries)
   if (pincode) where["address.pincode"] = pincode;
