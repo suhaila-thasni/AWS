@@ -51,7 +51,7 @@ router.post("/users/otp", validate(verifyOtpSchema), verifyOtp);
 router.post("/users/auth/send-otp", validate(sendOtpEmailSchema), sendOtpEmail);
 router.post("/users/auth/verify-otp", validate(verifyOtpEmailSchema), verifyOtpEmail);
 router.post("/users/auth/reset-password", validate(resetPasswordEmailSchema), resetPasswordEmail);
-router.put("/users/auth/change-password",  validate(changePasswordSchema), changePassword);
+router.put("/users/auth/change-password", authenticate,  validate(changePasswordSchema), changePassword);
 
 // Refresh and Logout
 router.post("/users/refresh", refreshUserToken);
