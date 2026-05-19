@@ -458,18 +458,18 @@ export const staffDelete: any = asyncHandler(async (req: Request, res: Response)
 // GET ALL - GET /staff
 export const getStaffs = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  let { id }: any = req.query;
+  let { hospitalId }: any = req.query;
 
   // ✅ FIX: convert array → string
-  if (Array.isArray(id)) {
-    id = id[0];
+  if (Array.isArray(hospitalId)) {
+    hospitalId = hospitalId[0];
   }
 
   const whereClause: any = {};
 
    // integer filter
-    if (id) {
-      whereClause.hospitalId = Number(id);
+    if (hospitalId) {
+      whereClause.hospitalId = Number(hospitalId);
     }
 
   const staff = await Staff.findAll({
