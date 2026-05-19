@@ -251,56 +251,64 @@ export const roleDelete: any = asyncHandler(async (req: Request, res: Response) 
 });
 
 // GET ALL - GET /role
-export const getRole: any = asyncHandler(async (req: Request, res: Response) => {
+export const getRole: any = asyncHandler(
+  async (req: Request, res: Response) : Promise<void> =>  {
 
-  let { hospitalId, labId, pharmacyId }: any = req.query;
+    let { hospitalId, labId, pharmacyId }: any = req.query;
 
     if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-        if (Array.isArray(labId)) labId = labId[0];
+    if (Array.isArray(labId)) labId = labId[0];
     if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
 
+    const whereClause: any = {};
 
-      const whereClause: any = {};
-
-
-  if (hospitalId !== undefined) {
-    whereClause.hospitalId = Number(hospitalId);
-  }
+    if (hospitalId !== undefined) {
+      whereClause.hospitalId = Number(hospitalId);
+    }
 
     if (labId !== undefined) {
-    whereClause.labId = Number(labId);
-  }
+      whereClause.labId = Number(labId);
+    }
 
     if (pharmacyId !== undefined) {
-    whereClause.pharmacyId = Number(pharmacyId);
-  }
+      whereClause.pharmacyId = Number(pharmacyId);
+    }
 
-  const role = await Role.findAll({
-    where: whereClause,
-  });
+    let role: any[] = [];
 
+    // ✅ Only fetch role if query exists
+    if (hospitalId || labId || pharmacyId) {
+      role = await Role.findAll({
+        where: whereClause,
+      });
+    }
+
+    // ✅ Always fetch admin
     const admin = await Role.findAll();
 
-  
+    // ✅ Only check empty when query exists
+    if ((hospitalId || labId || pharmacyId) && role.length === 0) {
+       res.status(404).json({
+        success: false,
+        message: "No data found",
+        data: null,
+        error: {
+          code: "NO_DATA_FOUND",
+          details: null,
+        },
+      });
+      return;
+    }
 
-  if (role.length === 0) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
+    res.status(200).json({
+      success: true,
+      status: "Success",
+      data: role, // [] if no query
+      admin: admin.slice(0, 5),
+      error: null,
     });
-    return;
   }
-
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: role,
-    admin: admin.slice(0, 5),
-    error: null,
-  });
-});
+);
 
 
 
