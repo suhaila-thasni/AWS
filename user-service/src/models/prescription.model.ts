@@ -160,7 +160,7 @@ Prescription.init(
     modelName: "Prescription",
     tableName: "prescriptions",
     timestamps: true,
-    paranoid: true, // Enables soft deletes
+
   }
 );
 
