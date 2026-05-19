@@ -221,7 +221,7 @@ Patient.init(
     modelName: "Patient",
     tableName: "patients",
     timestamps: true,
-    paranoid: true,
+    
 
       indexes: [
       {
