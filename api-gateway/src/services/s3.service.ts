@@ -20,7 +20,7 @@ breaker.fallback(() => {
 
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const url = `${SERVICES.S3_SERVICE}${req.originalUrl.replace("/api", "")}`;
+    const url = `${SERVICES.S3_SERVICE}${req.originalUrl.replace("/api/presignurl", "/presignurl")}`;
 
     const options = {
       method: req.method,
