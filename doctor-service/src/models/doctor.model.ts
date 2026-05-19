@@ -288,7 +288,6 @@ Doctor.init(
     modelName: "Doctor",
     tableName: "doctor",
     timestamps: true,
-    paranoid: true, // 🔥 Enables Soft Delete
 
     defaultScope: {
       attributes: { exclude: ["password", "otp", "otpExpiry"] },
