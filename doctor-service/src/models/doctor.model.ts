@@ -1,3 +1,4 @@
+
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 import bcrypt from "bcrypt";
@@ -67,6 +68,7 @@ interface IDoctor {
   roleId: number;
   isActive?: boolean;
   isDelete?: boolean;
+  deleteDate?: Date;
   otp?: string;
   otpExpiry?: Date;
   hospitalId?: number;
@@ -83,7 +85,7 @@ interface IDoctor {
 
 type DoctorCreationAttributes = Optional<
   IDoctor,
-  "id" |  "email" |  "joiningDate" | "password" | "fees" | "dob" | "gender" | "knowLanguages" | "qualification" | "consultingTwo" | "consultingOne" | "department" | "specialist" | "displayName" | "hospitalId"
+  "id" |  "email" |  "joiningDate" | "password" | "fees" | "dob" | "gender" | "knowLanguages" | "qualification" | "consultingTwo" | "consultingOne" | "department" | "specialist" | "displayName" | "hospitalId" | "deleteDate"
 >;
 
 /* =======================
@@ -120,6 +122,7 @@ class Doctor
   public hospitalId?: number;
   public roleId: number;
   public imageUrl?: string;
+  public deleteDate?: Date;
   public experience?: string;
   public regNo?: string;
   public autoDecline?: number;
@@ -272,6 +275,9 @@ Doctor.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    deleteDate: {
+      type: DataTypes.DATE,
+    },
     otp: {
       type: DataTypes.STRING,
       allowNull: true,
@@ -288,6 +294,7 @@ Doctor.init(
     modelName: "Doctor",
     tableName: "doctor",
     timestamps: true,
+
 
     defaultScope: {
       attributes: { exclude: ["password", "otp", "otpExpiry"] },
