@@ -15,19 +15,16 @@ const router = Router();
 
 router.post(
   "/presignurl",
-  authenticate,
   createPresignurl
 );
 
 router.put(
   "/presignurl",
-  authenticate,
   editAPresignurl
 );
 
 router.delete(
   "/presignurl",
-  authenticate,
   deleteAPresignurl
 );
 
