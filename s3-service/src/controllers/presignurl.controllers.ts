@@ -14,7 +14,6 @@ export const createPresignurl: any = asyncHandler(
     try {
       const { filename, contentType, size, role, id } = req.body;
       
-
       if (!filename || !contentType || !size) {
         res.status(400).json({ error: "Invalid request body" });
       }
@@ -90,6 +89,7 @@ export const editAPresignurl: any = asyncHandler(
     try {
       // ✅ Express way
       const { filename, contentType, key, role, id } = req.body;
+      
 
       if (!filename || !contentType) {
         res.status(400).json({
@@ -106,6 +106,8 @@ export const editAPresignurl: any = asyncHandler(
         ContentType: contentType,
       });
 
+      
+
       const presignedUrl = await getSignedUrl(S3, command, {
         expiresIn: 60 * 5,
       });
@@ -113,7 +115,7 @@ export const editAPresignurl: any = asyncHandler(
 
 
       if (role == "hospital") {
-        await axios.post(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: objectKey }, {
+        await axios.put(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: objectKey }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -121,7 +123,7 @@ export const editAPresignurl: any = asyncHandler(
       }
 
       if (role == "user") {
-        await axios.post(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: objectKey }, {
+        await axios.put(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: objectKey }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -129,7 +131,7 @@ export const editAPresignurl: any = asyncHandler(
       }
 
       if (role == "doctor") {
-        await axios.post(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: objectKey }, {
+        await axios.put(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: objectKey }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -137,15 +139,17 @@ export const editAPresignurl: any = asyncHandler(
       }
 
       if (role == "staff") {
-        await axios.post(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: objectKey }, {
+        await axios.put(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: objectKey }, {
           headers: {
             Authorization: req.headers.authorization,
           },
         });
       }
 
+      
+
       if (role == "ad") {
-        await axios.post(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: objectKey }, {
+        await axios.put(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: objectKey }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -188,7 +192,7 @@ export const deleteAPresignurl: any = asyncHandler(
 
 
       if (role == "hospital") {
-        await axios.post(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: null }, {
+        await axios.put(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: null }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -196,7 +200,7 @@ export const deleteAPresignurl: any = asyncHandler(
       }
 
       if (role == "user") {
-        await axios.post(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: null }, {
+        await axios.put(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: null }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -204,7 +208,7 @@ export const deleteAPresignurl: any = asyncHandler(
       }
 
       if (role == "doctor") {
-        await axios.post(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: null }, {
+        await axios.put(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: null }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -212,7 +216,7 @@ export const deleteAPresignurl: any = asyncHandler(
       }
 
       if (role == "staff") {
-        await axios.post(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: null }, {
+        await axios.put(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: null }, {
           headers: {
             Authorization: req.headers.authorization,
           },
@@ -220,7 +224,7 @@ export const deleteAPresignurl: any = asyncHandler(
       }
 
       if (role == "ad") {
-        await axios.post(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: null }, {
+        await axios.put(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: null }, {
           headers: {
             Authorization: req.headers.authorization,
           },
