@@ -382,7 +382,7 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
-    let { hospitalId, speciality }: any = req.query;
+    let { hospitalId, speciality, name, status }: any = req.query;
   
 if (Array.isArray(hospitalId)) {
       hospitalId = hospitalId[0];
@@ -392,12 +392,37 @@ if (Array.isArray(hospitalId)) {
       speciality = speciality[0];
     }
 
+    
+    if (Array.isArray(name)) {
+      name = name[0];
+    }
+
+    
+    if (Array.isArray(status)) {
+      status = status[0];
+    }
+
     const whereClause: any = {};
 
+    
     // Hospital filter
     if (hospitalId) {
       whereClause.hospitalId = Number(hospitalId);
     }
+
+       if (status) {
+      whereClause.isActive = status;
+    }
+
+    
+    // Display Name filter
+    if (name) {
+      whereClause.displayName = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+    
 
     // Speciality filter
     if (speciality) {
