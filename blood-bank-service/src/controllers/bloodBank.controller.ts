@@ -62,11 +62,15 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
 
 
 export const getAllStock = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { hospitalId }: any = req.query;
+  let { hospitalId, bloodGroup }: any = req.query;
 
   // convert array → single value
   if (Array.isArray(hospitalId)) {
     hospitalId = hospitalId[0];
+  }
+
+    if (Array.isArray(bloodGroup)) {
+    bloodGroup = bloodGroup[0];
   }
 
   const whereClause: any = {};
@@ -75,8 +79,15 @@ export const getAllStock = asyncHandler(async (req: Request, res: Response): Pro
     whereClause.hospitalId = Number(hospitalId); // ✅ ensure integer match
   }
 
+   if (bloodGroup) {
+      whereClause.bloodGroup = {
+        [Op.iLike]: `%${bloodGroup}%`,
+      };
+    }
+
   const bloodBank = await BloodBank.findAll({
     where: whereClause,
+    order: [["createdAt", "DESC"]],
   });
 
   if (bloodBank.length === 0) {
