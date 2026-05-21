@@ -318,6 +318,7 @@ export const getAmbulaces = asyncHandler(
       place,
       district,
       pincode,
+      vehicleType,
     }: any = req.query;
 
     // Handle array query params
@@ -329,6 +330,7 @@ export const getAmbulaces = asyncHandler(
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(place)) place = place[0];
     if (Array.isArray(pincode)) pincode = pincode[0];
+     if (Array.isArray(vehicleType)) vehicleType = vehicleType[0];
 
     const where: any = {};
 
@@ -345,6 +347,12 @@ export const getAmbulaces = asyncHandler(
     if (name) {
       where.serviceName = {
         [Op.iLike]: `%${name}%`,
+      };
+    }
+
+      if (vehicleType) {
+      where.vehicleType = {
+        [Op.iLike]: `%${vehicleType}%`,
       };
     }
 
