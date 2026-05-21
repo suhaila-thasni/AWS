@@ -458,11 +458,42 @@ export const staffDelete: any = asyncHandler(async (req: Request, res: Response)
 // GET ALL - GET /staff
 export const getStaffs = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  let { hospitalId }: any = req.query;
+  let { hospitalId, name, gender, phone, status, designation, staffType, email, staffId }: any = req.query;
 
   // ✅ FIX: convert array → string
   if (Array.isArray(hospitalId)) {
     hospitalId = hospitalId[0];
+  }
+
+  if (Array.isArray(name)) {
+    name = name[0];
+  }
+
+  if (Array.isArray(gender)) {
+    gender = gender[0];
+  }
+
+  if (Array.isArray(phone)) {
+    phone = phone[0];
+  }
+
+  if (Array.isArray(status)) {
+    status = status[0];
+  }
+  if (Array.isArray(designation)) {
+    designation = designation[0];
+  }
+
+    if (Array.isArray(staffType)) {
+    staffType = staffType[0];
+  }
+
+    if (Array.isArray(email)) {
+    email = email[0];
+  }
+
+    if (Array.isArray(staffId)) {
+    staffId = staffId[0];
   }
 
   const whereClause: any = {};
@@ -470,6 +501,57 @@ export const getStaffs = asyncHandler(async (req: Request, res: Response): Promi
    // integer filter
     if (hospitalId) {
       whereClause.hospitalId = Number(hospitalId);
+    }
+
+  if (status) {
+      whereClause.isActive = status;
+    }
+
+       if (speciality) {
+      whereClause.department = {
+        [Op.iLike]: `%${speciality}%`,
+      };
+    }
+
+      if (name) {
+      whereClause.name = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+     if (gender) {
+      whereClause.gender = {
+        [Op.iLike]: `%${gender}%`,
+      };
+    }
+
+       if (phone) {
+      whereClause.phone = {
+        [Op.iLike]: `%${phone}%`,
+      };
+    }
+  
+     if (staffId) {
+      whereClause.staffId = {
+        [Op.iLike]: `%${staffId}%`,
+      };
+    }
+    if (designation) {
+      whereClause.designation = {
+        [Op.iLike]: `%${designation}%`,
+      };
+    }
+
+     if (staffType) {
+      whereClause.staffType = {
+        [Op.iLike]: `%${staffType}%`,
+      };
+    }
+
+      if (email) {
+      whereClause.email = {
+        [Op.iLike]: `%${email}%`,
+      };
     }
 
   const staff = await Staff.findAll({
