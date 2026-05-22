@@ -507,11 +507,6 @@ export const getStaffs = asyncHandler(async (req: Request, res: Response): Promi
       whereClause.isActive = status;
     }
 
-       if (speciality) {
-      whereClause.department = {
-        [Op.iLike]: `%${speciality}%`,
-      };
-    }
 
       if (name) {
       whereClause.name = {
