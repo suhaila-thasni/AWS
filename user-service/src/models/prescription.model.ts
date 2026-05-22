@@ -1,3 +1,4 @@
+
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 
@@ -39,6 +40,10 @@ interface IPrescription {
 
   empty_stomach?: boolean;
 
+  deleteDate?: Date;
+  isActive?: boolean;
+  isDelete?: boolean;
+
 }
 
 /* =======================
@@ -53,6 +58,9 @@ type PrescriptionCreationAttributes =
     | "advice"
     | "next_consultation"
     | "empty_stomach"
+    | "deleteDate"
+    | "isActive"
+    | "isDelete"
     
   >;
 
@@ -86,6 +94,10 @@ class Prescription
   public next_consultation?: Date;
 
   public empty_stomach?: boolean;
+
+  public deleteDate?: Date;
+  public isActive?: boolean;
+  public isDelete?: boolean;
 
 } 
 
@@ -151,7 +163,19 @@ Prescription.init(
       defaultValue: false,
     },
     
-    
+    deleteDate: {
+      type: DataTypes.DATE,
+    },
+
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+
+    isDelete: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    }
 
   },
 
@@ -160,7 +184,7 @@ Prescription.init(
     modelName: "Prescription",
     tableName: "prescriptions",
     timestamps: true,
-
+    paranoid: true, // Enables soft deletes
   }
 );
 
