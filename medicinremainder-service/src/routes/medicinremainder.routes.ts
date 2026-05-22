@@ -13,15 +13,15 @@ import { checkPermission } from "../middleware/role.middleware";
 const router = Router();
 
 
-router.post("/medicinremainder", authenticate, checkPermission("medicinremainder", "create"), Registeration);
+router.post("/medicinremainder",  Registeration);
 
 
 // CRUD
 
-router.get("/medicinremainder", authenticate, checkPermission("medicinremainder", "view"), getMedicinremainder);
-router.get("/medicinremainder/:id", authenticate, checkPermission("medicinremainder", "view"), getanMedicinremainder);
-router.put("/medicinremainder/:id", authenticate, checkPermission("medicinremainder", "edit"), updateData);
-router.delete("/medicinremainder/:id", authenticate, checkPermission("medicinremainder", "delete"), medicinremainderDelete);
+router.get("/medicinremainder",  getMedicinremainder);
+router.get("/medicinremainder/:id", getanMedicinremainder);
+router.put("/medicinremainder/:id",  updateData);
+router.delete("/medicinremainder/:id", medicinremainderDelete);
 
 export default router;
 
