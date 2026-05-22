@@ -1,3 +1,4 @@
+
 import bcrypt from "bcryptjs";
 import User from "../models/user.model";
 import  Patient  from "../models/patient.model";
@@ -6,8 +7,6 @@ import twilio from "twilio";
 import { logger } from "../utils/logger";
 import { publishEvent } from "../events/publisher";
 import { sendEmail } from "./mail.service";
-import dotenv from "dotenv";
-dotenv.config();
 
 let twilioClient: any = null;
 
@@ -16,7 +15,6 @@ const getTwilioClient = () => {
   
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-
   
   if (!sid || !token) {
     logger.warn("Twilio credentials NOT FOUND in environment variables. SMS will NOT be sent.");
@@ -88,21 +86,39 @@ export const userService = {
         { transaction: t }
       );
 
+      console.log("data", data);
 
       if (data?.firstName && data?.lastName) {
-        // Extract only valid patient fields — do NOT spread the full user payload
+        // Extract only valid patient fields matching the new IPatient interface
         const {
-          firstName,  lastName, bloodGroup, gender, maritalStatus,
+          firstName, lastName, bloodGroup, gender, maritalStatus,
           patientType, age, dob, mobileNumber, emergencyNumber,
-          guardianName, addressLine1, addressLine2, location, hospitalId,
-          referredBy, department, referredOn, notes, email, 
+          guardianName, addressLine, location, email, password, hospitalId
         } = data;
 
         await Patient.create({
-          firstName,  lastName, bloodGroup, gender, maritalStatus,
-          patientType, age, dob,  mobileNumber, emergencyNumber,
-          guardianName, addressLine1, addressLine2,  location,
-          referredBy, department, referredOn, notes, email, hospitalId,
+          firstName,
+          lastName,
+          bloodGroup: bloodGroup || "O+",
+          gender: gender || "Male",
+          maritalStatus,
+          patientType: patientType || "Outpatient",
+          age: age || 0,
+          dob: dob || new Date(),
+          mobileNumber: mobileNumber || data.phone || "N/A",
+          emergencyNumber,
+          guardianName,
+          addressLine: addressLine || data.addressLine1 || "N/A",
+          location: location || {
+            country: data.country || "India",
+            state: data.state || "N/A",
+            district: data.district || "N/A",
+            place: data.place || data.city || "N/A",
+            pincode: Number(data.pincode || data.pinCode) || 0
+          },
+          email,
+          password,
+          hospitalId: hospitalId || 1,
           userId: user.id,
         }, { transaction: t });
       }
@@ -110,6 +126,27 @@ export const userService = {
       await t.commit();
 
       logger.info("User created successfully", { id: user.id });
+      
+      try {
+        await publishEvent("user_events", "USER_REGISTERED", {
+          userId: user.id,
+          email: user.email,
+          roleId: user.roleId,
+          firstName: data?.firstName,
+          lastName: data?.lastName
+        });
+
+        if (data?.firstName && data?.lastName) {
+          await publishEvent("patient_events", "PATIENT_REGISTERED", {
+            userId: user.id,
+            patientName: `${data.firstName} ${data.lastName}`,
+            phone: data.mobileNumber
+          });
+        }
+      } catch (err) {
+        logger.error("Failed to publish user/patient registered events", err);
+      }
+
       const { password: _, ...safeUser } = user.toJSON();
       return safeUser;
     } catch (dbError: any) {
@@ -141,10 +178,8 @@ export const userService = {
       throw { status: 401, message: "Wrong password" };
     }
 
-    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: false });
-
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: true });
-
+    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
     const { password: _, ...safeUser } = user.toJSON();
     return { token, refreshToken, user: safeUser };
   },
@@ -205,7 +240,7 @@ export const userService = {
 
     return { 
         message: numericPhone === APPLE_TEST_NUMBER ? "OTP sent (TEST ACCOUNT)" : "OTP sent successfully", 
-        otp: numericPhone === APPLE_TEST_NUMBER ? APPLE_TEST_OTP : otp 
+        otp: numericPhone === APPLE_TEST_NUMBER ? APPLE_TEST_OTP : undefined 
     };
   },
 
@@ -233,8 +268,8 @@ export const userService = {
     
     await user.save();
 
-    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: false });
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: true });
+    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
     const userJson = user.toJSON();
     delete (userJson as any).password;
     delete (userJson as any).otp;
@@ -244,7 +279,15 @@ export const userService = {
   },
 
   async getAllUsers() {
-    return await User.findAll();
+    return await User.findAll({
+      where: { isDelete: false }
+    });
+  },
+
+  async getBlacklistedUsers() {
+    return await User.findAll({
+      where: { isDelete: true }
+    });
   },
 
   async getUserById(id: string) {
@@ -257,7 +300,11 @@ export const userService = {
     const user = await User.findByPk(id);
     if (!user) throw { status: 404, message: "User not found" };
     
-    await user.destroy(); // Soft delete because of paranoid: true
+    await user.update({
+      isActive: false,
+      isDelete: true,
+      deleteDate: new Date(),
+    }); // Move to blacklist
     
     // Broadcast to other services (like blood-service) so they can cleanup too
     await publishEvent('user_events', 'user.deleted', { userId: id });
@@ -313,8 +360,8 @@ export const userService = {
     user.otpExpiry = undefined as any;
     await user.save();
 
-    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: false });
-    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: true });
+    const token = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
     const userJson = user.toJSON();
     delete (userJson as any).password;
     delete (userJson as any).otp;
@@ -382,4 +429,3 @@ export const userService = {
     return updatedUser;
   }
 };
-
