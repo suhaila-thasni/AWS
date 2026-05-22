@@ -1,3 +1,6 @@
+
+
+
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { userService } from "../services/user.service";
@@ -5,18 +8,22 @@ import Patient from "../models/patient.model";
 import PatientVitals from "../models/patientVitals.model";
 import User from "../models/user.model";
 import jwt from "jsonwebtoken";
-import { generateToken } from "../services/jwt.service";
+import { generateToken, generateRefreshToken } from "../services/jwt.service";
+import { publishEvent } from "../events/publisher";
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
+    // secure: process.env.NODE_ENV === "production"
+    // ,
     secure:false,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
   });
 };
+
 
 // --- USER CONTROLLERS ---
 
@@ -70,6 +77,15 @@ export const getUsers: any = asyncHandler(async (req: Request, res: Response) =>
   res.status(200).json({ success: true, data: users });
 });
 
+export const getBlacklistedUsers: any = asyncHandler(async (req: Request, res: Response) => {
+  const users = await userService.getBlacklistedUsers();
+  if (!users || users.length === 0) {
+    res.status(404).json({ success: false, message: "No blacklisted users found" });
+    return;
+  }
+  res.status(200).json({ success: true, data: users });
+});
+
 export const getUser: any = asyncHandler(async (req: Request, res: Response) => {
   try {
     const user = await userService.getUserById(req.params.id);
@@ -81,6 +97,7 @@ export const getUser: any = asyncHandler(async (req: Request, res: Response) => 
 
 export const updateUser: any = asyncHandler(async (req: Request, res: Response) => {
     try {
+      
       const user = await userService.updateUser(req.params.id, req.body);
       res.status(200).json({ success: true, message: "User updated successfully", data: user });
     } catch (error: any) {
@@ -171,10 +188,9 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
   try {
     // 1. Extract Patient Info
     const {
-      firstName,  lastName, bloodGroup, gender, maritalStatus,
+      firstName, lastName, bloodGroup, gender, maritalStatus,
       patientType, age, dob, mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, location, hospitalId,
-      referredBy, department, referredOn, notes, email,  userId
+      guardianName, addressLine, location, email, password, userId, hospitalId
     } = req.body;
 
     // 2. Extract Vitals Info (if any)
@@ -182,21 +198,63 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
     } = req.body;
 
-    // 3. Validate userId (if provided)
-    if (userId) {
-      const userExists = await User.findByPk(userId);
+    // 3. Handle User association conditions
+    let finalUserId = userId;
+
+    if (finalUserId) {
+      // Condition 1: userId is provided in body
+      const userExists = await User.findByPk(finalUserId);
       if (!userExists) {
-        res.status(400).json({ success: false, message: `User with ID ${userId} does not exist.` });
+        res.status(400).json({ success: false, message: `User with ID ${finalUserId} does not exist.` });
         return;
+      }
+    } else {
+      // Condition 3: Search existing user by phone (mobileNumber)
+      const existingUser = await User.findOne({ where: { phone: mobileNumber } });
+      if (existingUser) {
+        finalUserId = existingUser.id;
+      } else {
+        // Condition 2: Create new User automatically
+        const userEmail = email || null;
+        
+        let existingUserByEmail = null;
+        if (userEmail) {
+          existingUserByEmail = await User.findOne({ where: { email: userEmail } });
+        }
+
+        if (existingUserByEmail) {
+          finalUserId = existingUserByEmail.id;
+        } else {
+          const newUser = await User.create({
+            name: `${firstName} ${lastName}`,
+            email: userEmail,
+            phone: mobileNumber,
+            roleId: 3 // Default patient role
+          }, { transaction: t });
+          
+          finalUserId = newUser.id;
+
+          // Publish USER_REGISTERED event
+          try {
+            await publishEvent("user_events", "USER_REGISTERED", {
+              userId: newUser.id,
+              email: newUser.email,
+              roleId: newUser.roleId,
+              firstName,
+              lastName
+            });
+          } catch (err) {
+            console.error("Failed to publish USER_REGISTERED event for auto-created user:", err);
+          }
+        }
       }
     }
 
     // 4. Create Patient
     const patient = await Patient.create({
       firstName, lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob,  mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, location,
-      referredBy, department, referredOn, notes, email,  userId, hospitalId
+      patientType, age, dob, mobileNumber, emergencyNumber,
+      guardianName, addressLine, location, email, password, userId: finalUserId, hospitalId
     }, { transaction: t });
 
     // 4. If any vitals field is provided, create a vitals record
@@ -228,6 +286,17 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
       ],
     });
 
+    try {
+      await publishEvent("patient_events", "PATIENT_REGISTERED", {
+        patientId: result?.id,
+        userId: userId || null,
+        patientName: `${firstName} ${lastName}`,
+        phone: mobileNumber
+      });
+    } catch (err) {
+      console.error("Failed to publish PATIENT_REGISTERED event:", err);
+    }
+
     res.status(201).json({
       success: true,
       message: "Patient created successfully",
@@ -243,11 +312,36 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 // GET ALL PATIENTS
 export const getPatients: any = asyncHandler(async (req: Request, res: Response) => {
   const patients = await Patient.findAll({
+    where: { isDelete: false },
     include: [
       { model: PatientVitals, as: "vitals", limit: 1, order: [["createdAt", "DESC"]] },
       { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
     ],
   });
+
+  res.status(200).json({
+    success: true,
+    data: patients,
+  });
+});
+
+// GET BLACKLISTED PATIENTS
+export const getBlacklistedPatients: any = asyncHandler(async (req: Request, res: Response) => {
+  const patients = await Patient.findAll({
+    where: { isDelete: true },
+    include: [
+      { model: PatientVitals, as: "vitals", limit: 1, order: [["createdAt", "DESC"]] },
+      { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
+    ],
+  });
+
+  if (patients.length === 0) {
+    res.status(404).json({
+      success: false,
+      message: "No blacklisted patients found",
+    });
+    return;
+  }
 
   res.status(200).json({
     success: true,
@@ -292,10 +386,9 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
 
     // 1. Update Patient Profile Fields
     const {
-      firstName,  lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob,  mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, location, hospitalId,
-      referredBy, department, referredOn, notes, email,  userId
+      firstName, lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob, mobileNumber, emergencyNumber,
+      guardianName, addressLine, location, email, password, userId, hospitalId
     } = req.body;
 
     // 1.5 Validate userId (if provided)
@@ -308,10 +401,9 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
     }
 
     await patient.update({
-      firstName,  lastName, bloodGroup, gender, maritalStatus,
-      patientType, age, dob,  mobileNumber, emergencyNumber,
-      guardianName, addressLine1, addressLine2, location, hospitalId,
-      referredBy, department, referredOn, notes, email,  userId
+      firstName, lastName, bloodGroup, gender, maritalStatus,
+      patientType, age, dob, mobileNumber, emergencyNumber,
+      guardianName, addressLine, location, email, password, userId, hospitalId
     }, { transaction: t });
 
     // 2. Check for NEW Vitals in the same request
@@ -349,6 +441,16 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
       message: "Patient record updated successfully",
       data: result,
     });
+
+    try {
+      await publishEvent("patient_events", "PATIENT_UPDATED", {
+        patientId: patient.id,
+        userId: patient.userId || null,
+        patientName: `${firstName || patient.firstName} ${lastName || patient.lastName}`,
+      });
+    } catch (err) {
+      console.error("Failed to publish PATIENT_UPDATED event:", err);
+    }
   } catch (error: any) {
     await t.rollback();
     res.status(500).json({ success: false, message: error.message || "Failed to update patient" });
@@ -365,25 +467,40 @@ export const deletePatient: any = asyncHandler(async (req: Request, res: Respons
     return;
   }
 
-  await patient.destroy(); // Soft delete because of paranoid: true
+  // 🔥 Move to blacklist (soft delete)
+  await patient.update({
+    isActive: false,
+    isDelete: true,
+    deleteDate: new Date(),
+  });
 
   res.status(200).json({
     success: true,
-    message: "Patient deleted successfully",
+    message: "Patient moved to blacklist",
   });
+
+  try {
+    await publishEvent("patient_events", "PATIENT_DELETED", {
+      patientId: patient.id,
+      userId: patient.userId || null,
+    });
+  } catch (err) {
+    console.error("Failed to publish PATIENT_DELETED event:", err);
+  }
 });
 
 // REFRESH TOKEN - POST /users/refresh
 export const refreshUserToken: any = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
 
+  console.log("refreshToken", refreshToken);
 
   if (!refreshToken) {
     res.status(401).json({ success: false, message: "Refresh token missing" });
     return;
   }
 
-  const jwtKey = process.env.JWT_SECRET;
+  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
@@ -394,7 +511,7 @@ export const refreshUserToken: any = asyncHandler(async (req: Request, res: Resp
       return;
     }
 
-    const newToken = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId, isRefresh: false });
+    const newToken = generateToken({ id: user.id, email: user.email, role: "user", roleId: user.roleId });
 
     res.status(200).json({
       success: true,
@@ -415,4 +532,3 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
   });
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
-
