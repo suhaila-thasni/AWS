@@ -4,6 +4,7 @@ import BloodBank from "../models/bloodBank.model";
 import { httpClient } from "../utils/httpClient";
 import dotenv from "dotenv";
 dotenv.config();
+import { Op } from "sequelize";
 
 const VALID_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
