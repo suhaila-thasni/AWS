@@ -1,5 +1,7 @@
 import { Emitter } from "@socket.io/redis-emitter";
 import Redis from "ioredis";
+import dotenv from  "dotenv";
+dotenv.config();
 
 const redisClient = new Redis({
   host: process.env.REDIS_HOST || "localhost",
