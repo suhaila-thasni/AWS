@@ -1,60 +1,131 @@
+
 import { Router } from "express";
+
 import {
+
   createNotification,
   getanNotification,
+  getNotification,
+  getRoleNotifications,
+  markAsRead,
   updateData,
   notificationDelete,
-  getNotification,
-  getAllReadNotifications,
-  getAllUnreadNotifications
+
 } from "../controllers/notification.controllers";
-import { authenticate } from "../middleware/authenticate";
-import { validate, validateParams } from "../middleware/validate.middleware";
+
 import {
+  validate,
+  validateParams,
+} from "../middleware/validate.middleware";
+
+import {
+
   createNotificationSchema,
   updateNotificationSchema,
-  getByRoleParamsSchema
+  getByRoleParamsSchema,
+
 } from "../validations/notification.validation";
 
 const router = Router();
 
-// Apply authentication to all routes
-// router.use(authenticate);
+/* =========================================================
+   CREATE NOTIFICATION
+========================================================= */
 
-// CRUD
 router.post(
+
   "/notification",
+
   validate(createNotificationSchema),
+
   createNotification
+
 );
 
-router.get("/notification", getNotification);
+/* =========================================================
+   GET ALL NOTIFICATIONS
+========================================================= */
 
-router.get("/notification/:id", getanNotification);
+router.get(
+
+  "/notification",
+
+  getNotification
+
+);
+
+/* =========================================================
+   GET ONE NOTIFICATION
+========================================================= */
+
+router.get(
+
+  "/notification/:id",
+
+  getanNotification
+
+);
+
+/* =========================================================
+   GET ROLE NOTIFICATIONS
+   EXAMPLE:
+   /notification/user/10
+   /notification/doctor/5
+========================================================= */
+
+router.get(
+
+  "/notification/:role/:id",
+
+  validateParams(getByRoleParamsSchema),
+
+  getRoleNotifications
+
+);
+
+/* =========================================================
+   MARK AS READ
+   EXAMPLE:
+   /notification/read/user/10/1
+
+   role = user
+   userId = 10
+   notificationId = 1
+========================================================= */
 
 router.put(
+
+  "/notification/read/:role/:userId/:notificationId",
+
+  markAsRead
+
+);
+
+/* =========================================================
+   UPDATE NOTIFICATION
+========================================================= */
+
+router.put(
+
   "/notification/:id",
+
   validate(updateNotificationSchema),
+
   updateData
+
 );
 
-router.delete("/notification/:id", notificationDelete);
+/* =========================================================
+   DELETE NOTIFICATION
+========================================================= */
 
-router.get(
-  "/notification/unread/:id/:role",
-  validateParams(getByRoleParamsSchema),
-  getAllUnreadNotifications
-);
+router.delete(
 
-router.get(
-  "/notification/read/:id/:role",
-  validateParams(getByRoleParamsSchema),
-  getAllReadNotifications
+  "/notification/:id",
+
+  notificationDelete
+
 );
 
 export default router;
-
-
-
-
 
