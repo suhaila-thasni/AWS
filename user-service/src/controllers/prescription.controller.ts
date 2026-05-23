@@ -1,3 +1,5 @@
+
+
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Patient from "../models/patient.model";
@@ -9,7 +11,6 @@ import { httpClient } from "../utils/httpClient";
 // REGISTER
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
   const { bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach  } = req.body;
-  const authHeader = req.headers.authorization;
 
   const errors: string[] = [];
 
@@ -20,26 +21,24 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   }
 
   // 2. Validate Doctor (Cross-Service: doctor-service)
-  try {
-    console.log(`Verifying doctor at: http://doctor-service:3007/doctor/${doctorId}`);
-    await httpClient.get(`http://doctor-service:3007/doctor/${doctorId}`, {
-      headers: { Authorization: authHeader }
-    });
-  } catch (error: any) {
-    console.error("Doctor validation failed:", error.message);
-    errors.push(`Doctor with ID ${doctorId} does not exist or is unreachable.`);
-  }
+  // try {
+  //   await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/doctor/${doctorId}`, {
+  //     headers: { Authorization: req.headers.authorization}
+  //   });
+  // } catch (error: any) {
+  //   console.error("Doctor validation failed:", error.message);
+  //   errors.push(`Doctor with ID ${doctorId} does not exist or is unreachable.`);
+  // }
 
-  // 3. Validate Hospital (Cross-Service: hospital-service)
-  try {
-    console.log(`Verifying hospital at: http://hospital-service:3009/hospital/${hospitalId}`);
-    await httpClient.get(`http://hospital-service:3009/hospital/${hospitalId}`, {
-      headers: { Authorization: authHeader }
-    });
-  } catch (error: any) {
-    console.error("Hospital validation failed:", error.message);
-    errors.push(`Hospital with ID ${hospitalId} does not exist or is unreachable.`);
-  }
+  // // 3. Validate Hospital (Cross-Service: hospital-service)
+  // try {
+  //   await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/${hospitalId}`, {
+  //     headers: { Authorization: req.headers.authorization }
+  //   });
+  // } catch (error: any) {
+  //   console.error("Hospital validation failed:", error.message);
+  //   errors.push(`Hospital with ID ${hospitalId} does not exist or is unreachable.`);
+  // }
 
   // 4. Return all errors if any
   if (errors.length > 0) {
@@ -57,15 +56,16 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   });
 
   await publishEvent(
-  "prescription_events",
-  "PRESCRIPTION_CREATED",
-  {
-    prescriptionId: prescription.id,
-    bookingId,
-    doctorId,
-    patientId,
-  }
-);
+    "prescription_events",
+    "PRESCRIPTION_CREATED",
+    {
+      prescriptionId: prescription.id,
+      bookingId,
+      doctorId,
+      patientId,
+      userId: patientExists ? patientExists.userId : null,
+    }
+  );
 
 
 
@@ -80,7 +80,9 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
 
 // GET ALL USERS Prescription
 export const getPrescription: any = asyncHandler(async (req: Request, res: Response) => {
-  const prescription = await Prescription.findAll();
+  const prescription = await Prescription.findAll({
+    where: { isDelete: false }
+  });
 
   res.status(200).json({
     success: true,
@@ -127,8 +129,10 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
     return;
   }
 
+  const patient = await Patient.findByPk(prescription[1][0].patientId);
   await publishEvent("prescription_events", "PRESCRIPTION_UPDATED", {
     prescriptionId: prescription[1][0].id,
+    userId: patient ? patient.userId : null,
   });
 
   res.status(200).json({
@@ -151,23 +155,48 @@ export const deletePrescription: any = asyncHandler(async (req: Request, res: Re
     return;
   }
 
-  await Prescription.destroy({ where: { id: req.params.id } });
+  // 🔥 Move to blacklist (soft delete)
+  await user.update({
+    isActive: false,
+    isDelete: true,
+    deleteDate: new Date(),
+  });
 
   
 
+  const patient = await Patient.findByPk(user.patientId);
   await publishEvent(
-  "prescription_events",
-  "PRESCRIPTION_DELETED",
-  {
-    prescriptionId: Number(req.params.id),
-  }
-);
+    "prescription_events",
+    "PRESCRIPTION_DELETED",
+    {
+      prescriptionId: Number(req.params.id),
+      userId: patient ? patient.userId : null,
+    }
+  );
 
 
   res.status(200).json({
     success: true,
-    message: "Prescription deleted",
+    message: "Prescription moved to blacklist",
   });
 });
 
+// GET BLACKLISTED PRESCRIPTIONS
+export const getBlacklistedPrescriptions: any = asyncHandler(async (req: Request, res: Response) => {
+  const prescriptions = await Prescription.findAll({
+    where: { isDelete: true }
+  });
 
+  if (prescriptions.length === 0) {
+    res.status(404).json({
+      success: false,
+      message: "No blacklisted prescriptions found",
+    });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: prescriptions,
+  });
+});
