@@ -313,7 +313,7 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 
 export const getPatients: any = asyncHandler(
   async (req: Request, res: Response) => {
-    const {
+    let {
       name,
       phone,
       patientId,
@@ -323,7 +323,37 @@ export const getPatients: any = asyncHandler(
       page = 1,
       limit = 10,
       search_query,
-    } = req.query;
+    } : any = req.query;
+
+      if (Array.isArray(name)) {
+    name = name[0];
+  }
+
+      if (Array.isArray(phone)) {
+    phone = phone[0];
+  }
+
+      if (Array.isArray(patientId)) {
+    patientId = patientId[0];
+  }
+    if (Array.isArray(addressLine)) {
+    addressLine = addressLine[0];
+  }
+    if (Array.isArray(email)) {
+    email = email[0];
+  }
+
+    if (Array.isArray(guardianName)) {
+    guardianName = guardianName[0];
+  }  if (Array.isArray(page)) {
+    page = page[0];
+  }  if (Array.isArray(limit)) {
+    limit = limit[0];
+  }  if (Array.isArray(search_query)) {
+    search_query = search_query[0];
+  }
+
+
 
     const whereCondition: any = {
       isDelete: false,
@@ -432,6 +462,7 @@ export const getPatients: any = asyncHandler(
     });
   }
 );
+
 
 // GET BLACKLISTED PATIENTS
 export const getBlacklistedPatients: any = asyncHandler(async (req: Request, res: Response) => {
