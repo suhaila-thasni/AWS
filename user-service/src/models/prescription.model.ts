@@ -1,4 +1,3 @@
-
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 
@@ -24,7 +23,8 @@ interface IPrescription {
   id: number;
 
   bookingId: number; // 🔥 important
-  patientId: number;
+  userId: number;
+  patientId?: number;
   doctorId: number;
   hospitalId: number;
 
@@ -54,6 +54,7 @@ type PrescriptionCreationAttributes =
   Optional<
     IPrescription,
     | "id"
+    | "patientId"
     | "investigations"
     | "advice"
     | "next_consultation"
@@ -79,7 +80,8 @@ class Prescription
   public id!: number;
 
   public bookingId!: number;
-  public patientId!: number;
+  public userId!: number;
+  public patientId?: number;
   public doctorId!: number;
   public hospitalId!: number;
 
@@ -118,9 +120,14 @@ Prescription.init(
       allowNull: false,
     },
 
-    patientId: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+    },
+
+    patientId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
 
     doctorId: {
@@ -184,7 +191,6 @@ Prescription.init(
     modelName: "Prescription",
     tableName: "prescriptions",
     timestamps: true,
-    paranoid: true, // Enables soft deletes
   }
 );
 
