@@ -1,4 +1,10 @@
-import { DataTypes, Model, Optional } from "sequelize";
+
+import {
+  DataTypes,
+  Model,
+  Optional,
+} from "sequelize";
+
 import sequelize from "../config/db";
 
 /* =======================
@@ -10,30 +16,47 @@ interface INotification {
   id: number;
 
   userIds?: number[];
-
   hospitalIds?: number[];
-
-  labIds?: number[];
-
-  staffIds?: number[];
-
-  pharmacyIds?: number[];
-
   doctorIds?: number[];
-
-  adminIds?: number[];
-
+  staffIds?: number[];
+  pharmacyIds?: number[];
+  labIds?: number[];
   superAdminIds?: number[];
 
   message: string;
+
+  userReadStatus?: object;
+  hospitalReadStatus?: object;
+  doctorReadStatus?: object;
+  staffReadStatus?: object;
+  pharmacyReadStatus?: object;
+  labReadStatus?: object;
+  superAdminReadStatus?: object;
 }
 
 /* =======================
-   OPTIONAL
+   OPTIONAL FIELDS
 ======================= */
 
 type NotificationCreationAttributes =
-  Optional<INotification, "id">;
+  Optional<
+    INotification,
+    | "id"
+    | "userIds"
+    | "hospitalIds"
+    | "doctorIds"
+    | "staffIds"
+    | "pharmacyIds"
+    | "labIds"
+    | "superAdminIds"
+    | "userReadStatus"
+    | "hospitalReadStatus"
+    | "doctorReadStatus"
+    | "staffReadStatus"
+    | "pharmacyReadStatus"
+    | "labReadStatus"
+    | "superAdminReadStatus"
+  >;
 
 /* =======================
    MODEL
@@ -50,22 +73,22 @@ class Notification
   public id!: number;
 
   public userIds?: number[];
-
   public hospitalIds?: number[];
-
-  public labIds?: number[];
-
-  public staffIds?: number[];
-
-  public pharmacyIds?: number[];
-
   public doctorIds?: number[];
-
-  public adminIds?: number[];
-
+  public staffIds?: number[];
+  public pharmacyIds?: number[];
+  public labIds?: number[];
   public superAdminIds?: number[];
 
   public message!: string;
+
+  public userReadStatus?: object;
+  public hospitalReadStatus?: object;
+  public doctorReadStatus?: object;
+  public staffReadStatus?: object;
+  public pharmacyReadStatus?: object;
+  public labReadStatus?: object;
+  public superAdminReadStatus?: object;
 }
 
 /* =======================
@@ -82,57 +105,85 @@ Notification.init(
       primaryKey: true,
     },
 
+    /* RECEIVER IDS */
+
     userIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: [],
     },
 
     hospitalIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: [],
-    },
-
-    labIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: [],
-    },
-
-    staffIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: [],
-    },
-
-    pharmacyIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: [],
     },
 
     doctorIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: [],
     },
 
-    adminIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+    staffIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      defaultValue: [],
+    },
+
+    pharmacyIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
+      defaultValue: [],
+    },
+
+    labIds: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: [],
     },
 
     superAdminIds: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+      type: DataTypes.ARRAY(DataTypes.INTEGER),
       defaultValue: [],
     },
 
+    /* MESSAGE */
+
     message: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
+    },
+
+    /* READ STATUS */
+
+    userReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    hospitalReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    doctorReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    staffReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    pharmacyReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    labReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+
+    superAdminReadStatus: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
     },
 
   },
@@ -147,4 +198,3 @@ Notification.init(
 );
 
 export default Notification;
-
