@@ -10,6 +10,8 @@ import User from "../models/user.model";
 import jwt from "jsonwebtoken";
 import { generateToken, generateRefreshToken } from "../services/jwt.service";
 import { publishEvent } from "../events/publisher";
+import { Op } from "sequelize";
+
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -310,20 +312,129 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 
 
 // GET ALL PATIENTS
-export const getPatients: any = asyncHandler(async (req: Request, res: Response) => {
-  const patients = await Patient.findAll({
-    where: { isDelete: false },
-    include: [
-      { model: PatientVitals, as: "vitals", limit: 1, order: [["createdAt", "DESC"]] },
-      { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
-    ],
-  });
 
-  res.status(200).json({
-    success: true,
-    data: patients,
-  });
-});
+
+export const getPatients: any = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {
+      name,
+      phone,
+      patientId,
+      addressLine,
+      email,
+      guardianName,
+      page = 1,
+      limit = 10,
+      search_query,
+    } = req.query;
+
+    const whereCondition: any = {
+      isDelete: false,
+    };
+
+    // Separate field filters
+    if (name) {
+      whereCondition.name = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+    if (phone) {
+      whereCondition.phone = {
+        [Op.iLike]: `%${phone}%`,
+      };
+    }
+
+    if (patientId) {
+      whereCondition.patientId = {
+        [Op.iLike]: `%${patientId}%`,
+      };
+    }
+
+    if (addressLine) {
+      whereCondition.addressLine = {
+        [Op.iLike]: `%${addressLine}%`,
+      };
+    }
+
+    if (email) {
+      whereCondition.email = {
+        [Op.iLike]: `%${email}%`,
+      };
+    }
+
+    if (guardianName) {
+      whereCondition.guardianName = {
+        [Op.iLike]: `%${guardianName}%`,
+      };
+    }
+
+    // Global search
+    if (search_query) {
+      whereCondition[Op.or] = [
+        {
+          name: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          phone: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          patientId: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          addressLine: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          email: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          guardianName: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+      ];
+    }
+
+    const patients = await Patient.findAndCountAll({
+      where: whereCondition,
+      include: [
+        {
+          model: PatientVitals,
+          as: "vitals",
+          separate: true,
+          limit: 1,
+          order: [["createdAt", "DESC"]],
+        },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "phone"],
+        },
+      ],
+      limit: Number(limit),
+      offset: (Number(page) - 1) * Number(limit),
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(200).json({
+      success: true,
+      total: patients.count,
+      currentPage: Number(page),
+      totalPages: Math.ceil(patients.count / Number(limit)),
+      data: patients.rows,
+    });
+  }
+);
 
 // GET BLACKLISTED PATIENTS
 export const getBlacklistedPatients: any = asyncHandler(async (req: Request, res: Response) => {
