@@ -11,7 +11,7 @@ import { httpClient } from "../utils/httpClient";
 // REGISTER
 
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
-  const { bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach  } = req.body;
+  const { bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach, userId  } = req.body;
 
   const errors: string[] = [];
 
@@ -53,7 +53,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
 
   // 5. Create Prescription
   const prescription = await Prescription.create({
-    bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach 
+    bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach, userId 
   });
 
   await publishEvent(
@@ -77,7 +77,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     data: prescription,
   });
 });
-
 
 
 
