@@ -1,236 +1,460 @@
+
+
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
-import Notification from "../models/notification.model";
-import { publishEvent } from "../events/publisher";
 import { Op } from "sequelize";
 
-// CREATE - POST /notification/register
-export const createNotification: any = asyncHandler(async (req: Request, res: Response) => {
-  const { 
-    userIds, hospitalIds, labIds, staffIds, pharmacyIds, doctorIds, adminIds, superAdminIds, 
-    message 
-  } = req.body;
+import Notification from "../models/notification.model";
+import { publishEvent } from "../events/publisher";
 
-  const newNotification = await Notification.create({
-    userIds: userIds || [],
-    hospitalIds: hospitalIds || [],
-    labIds: labIds || [],
-    staffIds: staffIds || [],
-    pharmacyIds: pharmacyIds || [],
-    doctorIds: doctorIds || [],
-    adminIds: adminIds || [],
-    superAdminIds: superAdminIds || [],
-    message
-  });
+/* =========================================================
+   CREATE NOTIFICATION
+   POST /notification
+========================================================= */
 
-  await publishEvent("notification_events", "NOTIFICATION_CREATED", {
-    notificationId: newNotification.id,
-  });
+export const createNotification: any = asyncHandler(
+  async (req: Request, res: Response) => {
 
-  res.status(201).json({
-    success: true,
-    message: "Notification created successfully",
-    data: newNotification,
-    error: null,
-  });
-});
+    const {
+      userIds,
+      hospitalIds,
+      doctorIds,
+      staffIds,
+      pharmacyIds,
+      labIds,
+      superAdminIds,
+      message,
+    } = req.body;
 
-// GET ONE - GET /notification/:id
-export const getanNotification: any = asyncHandler(async (req: Request, res: Response) => {
-  const notification = await Notification.findByPk(req.params.id);
-  if (!notification) {
-    res.status(404).json({
-      success: false,
-      message: "Notification not found",
-      data: null,
-      error: { code: "NOTIFICATION_NOT_FOUND", details: null },
+    const newNotification = await Notification.create({
+
+      userIds: userIds || [],
+      hospitalIds: hospitalIds || [],
+      doctorIds: doctorIds || [],
+      staffIds: staffIds || [],
+      pharmacyIds: pharmacyIds || [],
+      labIds: labIds || [],
+      superAdminIds: superAdminIds || [],
+
+      message,
+
+      /* READ STATUS */
+
+      userReadStatus: {},
+      hospitalReadStatus: {},
+      doctorReadStatus: {},
+      staffReadStatus: {},
+      pharmacyReadStatus: {},
+      labReadStatus: {},
+      superAdminReadStatus: {},
+
     });
-    return;
+
+    await publishEvent(
+      "notification_events",
+      "NOTIFICATION_CREATED",
+      {
+        notificationId: newNotification.id,
+      }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Notification created successfully",
+      data: newNotification,
+      error: null,
+    });
+
   }
+);
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: notification,
-    error: null,
-  });
-});
+/* =========================================================
+   GET ONE NOTIFICATION
+   GET /notification/:id
+========================================================= */
 
-// GET ALL UNREAD - GET /notification/unread/:id/:role
-export const getAllUnreadNotifications: any = asyncHandler(async (req: Request, res: Response) => {
-  const { id, role } = req.params;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const offset = (page - 1) * limit;
+export const getanNotification: any = asyncHandler(
+  async (req: Request, res: Response) => {
 
-  const numericId = Number(id);
-  let whereCondition: any = {};
+    const notification =
+      await Notification.findByPk(req.params.id);
 
-  switch (role) {
-    case "user": whereCondition = { userIds: { [Op.contains]: [numericId] } }; break;
-    case "doctor": whereCondition = { doctorIds: { [Op.contains]: [numericId] } }; break;
-    case "staff": whereCondition = { staffIds: { [Op.contains]: [numericId] } }; break;
-    case "lab": whereCondition = { labIds: { [Op.contains]: [numericId] } }; break;
-    case "pharmacy": whereCondition = { pharmacyIds: { [Op.contains]: [numericId] } }; break;
-    case "hospital": whereCondition = { hospitalIds: { [Op.contains]: [numericId] } }; break;
-    case "superadmin": whereCondition = { superAdminIds: { [Op.contains]: [numericId] } }; break;
+    if (!notification) {
 
-    default:
-      res.status(400).json({ success: false, message: "Invalid role" });
+      res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+
       return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: notification,
+      error: null,
+    });
+
   }
+);
 
-  const { count, rows: notifications } = await Notification.findAndCountAll({
-    where: whereCondition,
-    order: [["createdAt", "DESC"]],
-    limit,
-    offset,
-  });
+/* =========================================================
+   GET ALL NOTIFICATIONS
+   GET /notification
+========================================================= */
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: notifications,
-    pagination: {
-      total: count,
-      page,
-      pages: Math.ceil(count / limit),
-      limit
-    },
-    error: null,
-  });
-});
+export const getNotification: any = asyncHandler(
+  async (req: Request, res: Response) => {
 
-// GET ALL READ - GET /notification/read/:id/:role
-export const getAllReadNotifications: any = asyncHandler(async (req: Request, res: Response) => {
-  const { id, role } = req.params;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const offset = (page - 1) * limit;
+    const page =
+      parseInt(req.query.page as string) || 1;
 
-  const numericId = Number(id);
-  let whereCondition: any = {};
+    const limit =
+      parseInt(req.query.limit as string) || 20;
 
-  switch (role) {
-    case "user": whereCondition = { userIds: { [Op.contains]: [numericId] } }; break;
-    case "doctor": whereCondition = { doctorIds: { [Op.contains]: [numericId] } }; break;
-    case "staff": whereCondition = { staffIds: { [Op.contains]: [numericId] } }; break;
-    case "lab": whereCondition = { labIds: { [Op.contains]: [numericId] } }; break;
-    case "pharmacy": whereCondition = { pharmacyIds: { [Op.contains]: [numericId] } }; break;
-    case "hospital": whereCondition = { hospitalIds: { [Op.contains]: [numericId] } }; break;
-    case "superadmin": whereCondition = { superAdminIds: { [Op.contains]: [numericId] } }; break;
-    default:
-      res.status(400).json({ success: false, message: "Invalid role" });
+    const offset = (page - 1) * limit;
+
+    const {
+      count,
+      rows,
+    } = await Notification.findAndCountAll({
+
+      limit,
+      offset,
+
+      order: [["createdAt", "DESC"]],
+
+    });
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+
+      pagination: {
+        total: count,
+        page,
+        pages: Math.ceil(count / limit),
+        limit,
+      },
+
+      error: null,
+    });
+
+  }
+);
+
+/* =========================================================
+   GET USER/HOSPITAL/DOCTOR NOTIFICATIONS
+   GET /notification/:role/:id
+========================================================= */
+
+export const getRoleNotifications: any = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const { role, id } = req.params;
+
+    const numericId = Number(id);
+
+    let whereCondition: any = {};
+
+    switch (role) {
+
+      case "user":
+
+        whereCondition = {
+          userIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "hospital":
+
+        whereCondition = {
+          hospitalIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "doctor":
+
+        whereCondition = {
+          doctorIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "staff":
+
+        whereCondition = {
+          staffIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "pharmacy":
+
+        whereCondition = {
+          pharmacyIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "lab":
+
+        whereCondition = {
+          labIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      case "superadmin":
+
+        whereCondition = {
+          superAdminIds: {
+            [Op.contains]: [numericId],
+          },
+        };
+
+        break;
+
+      default:
+
+        res.status(400).json({
+          success: false,
+          message: "Invalid role",
+        });
+
+        return;
+    }
+
+    const notifications =
+      await Notification.findAll({
+
+        where: whereCondition,
+
+        order: [["createdAt", "DESC"]],
+
+      });
+
+    res.status(200).json({
+      success: true,
+      data: notifications,
+      error: null,
+    });
+
+  }
+);
+
+/* =========================================================
+   MARK AS READ
+   PUT /notification/read/:notificationId/:role/:userId
+========================================================= */
+
+export const markAsRead: any = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const {
+      notificationId,
+      role,
+      userId,
+    } = req.params;
+
+    const notification =
+      await Notification.findByPk(notificationId);
+
+    if (!notification) {
+
+      res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+
       return;
-  }
+    }
 
-  const { count, rows: notifications } = await Notification.findAndCountAll({
-    where: whereCondition,
-    order: [["createdAt", "DESC"]],
-    limit,
-    offset,
-  });
+    const numericUserId = Number(userId);
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: notifications,
-    pagination: {
-      total: count,
-      page,
-      pages: Math.ceil(count / limit),
-      limit
-    },
-    error: null,
-  });
-});
+    switch (role) {
 
-// UPDATE - PUT /notification/:id
-export const updateData: any = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updatePayload = req.body;
+      case "user":
 
-  // Prevent updating restricted fields
-  const restrictedFields = ['userIds', 'hospitalIds', 'doctorIds', 'labIds', 'staffIds', 'pharmacyIds', 'adminIds', 'superAdminIds'];
-  restrictedFields.forEach(field => delete updatePayload[field]);
+        notification.userReadStatus = {
+          ...(notification.userReadStatus as object),
+          [numericUserId]: true,
+        };
 
-  const [affectedCount, updatedNotifications] = await Notification.update(updatePayload, {
-    where: { id: id },
-    returning: true,
-  });
+        break;
 
-  if (affectedCount === 0) {
-    res.status(404).json({
-      success: false,
-      message: "Notification not found",
-      data: null,
-      error: { code: "NOTIFICATION_NOT_FOUND", details: null },
+      case "hospital":
+
+        notification.hospitalReadStatus = {
+          ...(notification.hospitalReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      case "doctor":
+
+        notification.doctorReadStatus = {
+          ...(notification.doctorReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      case "staff":
+
+        notification.staffReadStatus = {
+          ...(notification.staffReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      case "pharmacy":
+
+        notification.pharmacyReadStatus = {
+          ...(notification.pharmacyReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      case "lab":
+
+        notification.labReadStatus = {
+          ...(notification.labReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      case "superadmin":
+
+        notification.superAdminReadStatus = {
+          ...(notification.superAdminReadStatus as object),
+          [numericUserId]: true,
+        };
+
+        break;
+
+      default:
+
+        res.status(400).json({
+          success: false,
+          message: "Invalid role",
+        });
+
+        return;
+    }
+
+    await notification.save();
+
+    await publishEvent(
+      "notification_events",
+      "NOTIFICATION_READ",
+      {
+        notificationId: notification.id,
+        role,
+        userId,
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+      data: notification,
     });
-    return;
+
   }
+);
 
-  await publishEvent("notification_events", "NOTIFICATION_UPDATED", {
-    notificationId: updatedNotifications[0].id,
-  });
+/* =========================================================
+   UPDATE NOTIFICATION
+   PUT /notification/:id
+========================================================= */
 
-  res.status(200).json({
-    success: true,
-    message: "Successfully updated",
-    data: updatedNotifications[0],
-    error: null,
-  });
-});
+export const updateData: any = asyncHandler(
+  async (req: Request, res: Response) => {
 
-// DELETE - DELETE /notification/:id
-export const notificationDelete: any = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params;
+    const { id } = req.params;
 
-  const deleted = await Notification.destroy({
-    where: { id: id }
-  });
+    const updatePayload = req.body;
 
-  if (!deleted) {
-    res.status(404).json({
-      success: false,
-      message: "Notification not found",
-      data: null,
-      error: { code: "NOTIFICATION_NOT_FOUND", details: null },
+    const [
+      affectedCount,
+      updatedRows,
+    ] = await Notification.update(
+      updatePayload,
+      {
+        where: { id },
+        returning: true,
+      }
+    );
+
+    if (affectedCount === 0) {
+
+      res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Notification updated successfully",
+      data: updatedRows[0],
+      error: null,
     });
-    return;
+
   }
+);
 
-  res.status(200).json({
-    success: true,
-    message: "Notification deleted successfully",
-    data: null,
-    error: null,
-  });
-});
+/* =========================================================
+   DELETE NOTIFICATION
+   DELETE /notification/:id
+========================================================= */
 
-// GET ALL - GET /notification
-export const getNotification: any = asyncHandler(async (req: Request, res: Response) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
-  const offset = (page - 1) * limit;
+export const notificationDelete: any = asyncHandler(
+  async (req: Request, res: Response) => {
 
-  const { count, rows: notifications } = await Notification.findAndCountAll({
-    limit,
-    offset,
-    order: [["createdAt", "DESC"]]
-  });
+    const { id } = req.params;
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: notifications,
-    pagination: {
-      total: count,
-      page,
-      pages: Math.ceil(count / limit),
-      limit
-    },
-    error: null,
-  });
-});
+    const deleted =
+      await Notification.destroy({
+        where: { id },
+      });
 
+    if (!deleted) {
 
+      res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Notification deleted successfully",
+      error: null,
+    });
+
+  }
+);
