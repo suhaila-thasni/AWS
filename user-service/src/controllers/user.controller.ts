@@ -318,6 +318,7 @@ export const getPatients: any = asyncHandler(
       phone,
       patientId,
       addressLine,
+      hospitalId,
       email,
       guardianName,
       page = 1,
@@ -327,6 +328,10 @@ export const getPatients: any = asyncHandler(
 
       if (Array.isArray(name)) {
     name = name[0];
+  }
+
+          if (Array.isArray(hospitalId)) {
+    hospitalId = hospitalId[0];
   }
 
       if (Array.isArray(phone)) {
@@ -364,6 +369,10 @@ export const getPatients: any = asyncHandler(
       whereCondition.name = {
         [Op.iLike]: `%${name}%`,
       };
+    }
+
+        if (hospitalId) {
+      whereCondition.hospitalId = Number(hospitalId);
     }
 
     if (phone) {
