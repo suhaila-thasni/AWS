@@ -9,6 +9,7 @@ import { httpClient } from "../utils/httpClient";
 
 
 // REGISTER
+
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
   const { bookingId, hospitalId, doctorId,  patientId, complaint, medications, investigations, advice, next_consultation, empty_stomach  } = req.body;
 
@@ -63,7 +64,8 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       bookingId,
       doctorId,
       patientId,
-      userId: patientExists ? patientExists.userId : null,
+      // userId: patientExists ? patientExists.userId : null,
+      userId: patientId
     }
   );
 
@@ -75,6 +77,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     data: prescription,
   });
 });
+
 
 
 
