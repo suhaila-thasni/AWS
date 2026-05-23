@@ -91,14 +91,13 @@ export const userService = {
       if (data?.firstName && data?.lastName) {
         // Extract only valid patient fields matching the new IPatient interface
         const {
-          firstName, lastName, bloodGroup, gender, maritalStatus,
+          name, bloodGroup, gender, maritalStatus,
           patientType, age, dob, mobileNumber, emergencyNumber,
           guardianName, addressLine, location, email, password, hospitalId
         } = data;
 
         await Patient.create({
-          firstName,
-          lastName,
+          name,
           bloodGroup: bloodGroup || "O+",
           gender: gender || "Male",
           maritalStatus,
