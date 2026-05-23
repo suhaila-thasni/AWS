@@ -1,15 +1,15 @@
 import amqp from "amqplib";
-import { env } from "../config/env.js";
-import { socketEmitter } from "../utils/socket.emitter.js";
-import { handleBookingEvent } from "../handlers/booking.handler.js";
-import { handleDoctorEvent } from "../handlers/doctor.handler.js";
-import { handleStaffEvent } from "../handlers/staff.handler.js";
-import { handleHospitalEvent } from "../handlers/hospital.handler.js";
-import { handlePatientEvent } from "../handlers/patient.handler.js";
-import { handlePrescriptionEvent } from "../handlers/prescription.handler.js";
-import { handleAdEvent } from "../handlers/ad.handler.js";
-import { handleAmbulanceEvent } from "../handlers/ambulance.handler.js";
-import { handleBloodEvent } from "../handlers/blood.handler.js";
+import { env } from "../config/env";
+import { socketEmitter } from "../utils/socket.emitter";
+import { handleBookingEvent } from "../handlers/booking.handler";
+import { handleDoctorEvent } from "../handlers/doctor.handler";
+import { handleStaffEvent } from "../handlers/staff.handler";
+import { handleHospitalEvent } from "../handlers/hospital.handler";
+import { handlePatientEvent } from "../handlers/patient.handler";
+import { handlePrescriptionEvent } from "../handlers/prescription.handler";
+import { handleAdEvent } from "../handlers/ad.handler";
+import { handleAmbulanceEvent } from "../handlers/ambulance.handler";
+import { handleBloodEvent } from "../handlers/blood.handler";
 
 let connection: amqp.Connection;
 let channel: amqp.Channel;
