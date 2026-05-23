@@ -434,20 +434,6 @@ export const getPatients: any = asyncHandler(
 
     const patients = await Patient.findAndCountAll({
       where: whereCondition,
-      include: [
-        {
-          model: PatientVitals,
-          as: "vitals",
-          separate: true,
-          limit: 1,
-          order: [["createdAt", "DESC"]],
-        },
-        {
-          model: User,
-          as: "user",
-          attributes: ["id", "name", "email", "phone"],
-        },
-      ],
       limit: Number(limit),
       offset: (Number(page) - 1) * Number(limit),
       order: [["createdAt", "DESC"]],
