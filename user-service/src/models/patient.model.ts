@@ -18,8 +18,8 @@ interface IPatient {
   userId?: number;
   hospitalId: number;
 
-  firstName: string;
-  lastName: string;
+  name: string;
+
 
   bloodGroup: string;
   gender: string;
@@ -55,8 +55,8 @@ class Patient extends Model<IPatient> implements IPatient {
   public userId!: number;
   public hospitalId!: number;
 
-  public firstName!: string;
-  public lastName!: string;
+  public name!: string;
+ 
 
   public bloodGroup!: string;
   public gender!: string;
@@ -119,15 +119,12 @@ Patient.init(
     },
 
     // Basic Info
-    firstName: {
+    name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
 
-    lastName: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
+  
 
     // ENUMS
     bloodGroup: {
@@ -141,7 +138,7 @@ Patient.init(
         "AB+",
         "AB-"
       ),
-      allowNull: false,
+      allowNull: true,
     },
 
     gender: {
@@ -161,7 +158,7 @@ Patient.init(
 
     patientType: {
       type: DataTypes.ENUM("Inpatient", "Outpatient"),
-      allowNull: false,
+      allowNull: true,
     },
 
     age: {
@@ -192,7 +189,7 @@ Patient.init(
 
     addressLine: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
 
     // Location JSON
