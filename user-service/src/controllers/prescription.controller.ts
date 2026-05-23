@@ -16,9 +16,9 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
 
   // 1. Validate Patient (Local)
   const patientExists = await Patient.findByPk(patientId);
-  if (!patientExists) {
-    errors.push(`Patient with ID ${patientId} does not exist.`);
-  }
+  // if (!patientExists) {
+  //   errors.push(`Patient with ID ${patientId} does not exist.`);
+  // }
 
   // 2. Validate Doctor (Cross-Service: doctor-service)
   // try {
