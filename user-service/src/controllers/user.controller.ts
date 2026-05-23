@@ -601,7 +601,6 @@ export const deletePatient: any = asyncHandler(async (req: Request, res: Respons
 export const refreshUserToken: any = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
 
-  console.log("refreshToken", refreshToken);
 
   if (!refreshToken) {
     res.status(401).json({ success: false, message: "Refresh token missing" });
