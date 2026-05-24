@@ -16,6 +16,13 @@ module.exports = {
     });
   },
 
+      async up(queryInterface, Sequelize) {
+    await queryInterface.addColumn('specialitys', 'isActive', {
+      type: Sequelize.BOOLEAN,
+         defaultValue: true,
+    });
+  },
+
 
 
   async down(queryInterface, Sequelize) {
@@ -23,5 +30,9 @@ module.exports = {
   },
     async down(queryInterface, Sequelize) {
     await queryInterface.removeColumn('specialitys', 'isDelete');
+  },
+     async down(queryInterface, Sequelize) {
+    await queryInterface.removeColumn('specialitys', 'isActive');
   }
+
 };
