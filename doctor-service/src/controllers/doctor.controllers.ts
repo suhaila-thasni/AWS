@@ -378,51 +378,49 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 
 // GET ALL - GET /doctors
 
-
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
-    let { hospitalId, speciality, name, status }: any = req.query;
-  
-if (Array.isArray(hospitalId)) {
-      hospitalId = hospitalId[0];
-    }
+    const normalizeQuery = (value: any) =>
+      Array.isArray(value) ? value[0] : value;
 
-    if (Array.isArray(speciality)) {
-      speciality = speciality[0];
-    }
+    let {
+      hospitalId,
+      speciality,
+      name,
+      status,
+      search_query,
+      page = 1,
+      limit = 10,
+    }: any = req.query;
 
-    
-    if (Array.isArray(name)) {
-      name = name[0];
-    }
-
-    
-    if (Array.isArray(status)) {
-      status = status[0];
-    }
+    hospitalId = normalizeQuery(hospitalId);
+    speciality = normalizeQuery(speciality);
+    name = normalizeQuery(name);
+    status = normalizeQuery(status);
+    search_query = normalizeQuery(search_query);
 
     const whereClause: any = {};
 
-    
+    const pageNum = Math.max(Number(page) || 1, 1);
+    const limitNum = Math.max(Number(limit) || 10, 1);
+
     // Hospital filter
     if (hospitalId) {
       whereClause.hospitalId = Number(hospitalId);
     }
 
-       if (status) {
-      whereClause.isActive = status;
+    // Status filter
+    if (status !== undefined) {
+      whereClause.isActive = status === "true";
     }
 
-    
-    // Display Name filter
+    // Name filter
     if (name) {
       whereClause.displayName = {
         [Op.iLike]: `%${name}%`,
       };
     }
-
-    
 
     // Speciality filter
     if (speciality) {
@@ -431,27 +429,67 @@ if (Array.isArray(hospitalId)) {
       };
     }
 
-    const doctors = await Doctor.findAll({
+    // Search query
+    if (search_query) {
+      whereClause[Op.or] = [
+        {
+          displayName: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          email: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          phone: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          designation: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          department: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          gender: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+      ];
+    }
+
+    const doctors = await Doctor.findAndCountAll({
       where: whereClause,
-       order: [["createdAt", "ASC"]],
+      limit: limitNum,
+      offset: (pageNum - 1) * limitNum,
+      order: [["createdAt", "DESC"]],
     });
 
-    if (doctors.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "No doctors found",
-        data: [],
-      });
-      return;
-    }
+    const totalPages = Math.ceil(doctors.count / limitNum);
 
     res.status(200).json({
       success: true,
-      count: doctors.length,
-      data: doctors,
+      data: doctors.rows,
+      pagination: {
+        totalItems: doctors.count,
+        totalPages,
+        currentPage: pageNum,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPreviousPage: pageNum > 1,
+      },
+      error: null,
     });
   }
 );
+
 
 // CHANGE PASSWORD - PUT /doctor/password
 export const changepassword: any = asyncHandler(async (req: Request, res: Response) => {
