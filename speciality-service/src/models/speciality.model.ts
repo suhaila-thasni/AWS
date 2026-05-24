@@ -5,16 +5,11 @@ import sequelize from "../config/db";
    INTERFACE
 ======================= */
 
-interface IPicture {
-  imageUrl?: string;
-  public_id?: string;
-
-}
 
 export interface ISpeciality {
   id: number;
   name: string;
-  picture?: IPicture;
+  imageUrl?: string;
   isActive?: boolean;
   isDelete?: boolean;
 }
@@ -25,7 +20,7 @@ export interface ISpeciality {
 
 type SpecialityCreationAttributes = Optional<
   ISpeciality,
-  "id" | "picture" | "isActive" | "isDelete" 
+  "id" | "imageUrl" | "isActive" | "isDelete" 
 >;
 
 /* =======================
@@ -38,7 +33,7 @@ class Speciality
 {
   public id!: number;
   public name!: string;
-  public picture?: IPicture;
+  public imageUrl?: string;
   public isActive?: boolean;
   public isDelete?: boolean;
 
@@ -68,10 +63,11 @@ Speciality.init(
       },
     },
 
-    picture: {
-      type: DataTypes.JSONB, // store { imageUrl, public_id }
+    imageUrl: {
+      type: DataTypes.STRING, // 🔥 store imageUrl + public_id
+      allowNull: true
     },
-
+    
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
