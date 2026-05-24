@@ -85,7 +85,7 @@ Speciality.init(
   {
     sequelize,
     modelName: "Speciality",
-    tableName: "speciality",
+    tableName: "specialitys",
     timestamps: true,
     paranoid: true, // 🔥 Enables Soft Delete
 
