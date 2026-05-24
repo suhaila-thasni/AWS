@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import asyncHandler from "express-async-handler";
 import BloodDonor from "../models/bloodDonor.model";
 import { publishEvent } from "../events/publisher";
@@ -255,6 +255,7 @@ const COMPATIBILITY_MAP: Record<string, string[]> = {
 // ✅ handle array query params
 
 
+
 export const getDonors = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   let {
     bloodGroup,
@@ -278,9 +279,6 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
                     if (Array.isArray(district)) district = district[0];
                         if (Array.isArray(name)) name = name[0];
                         if (Array.isArray(search_query)) search_query = search_query[0];
-
-
-  
 
   const where: any = {};
 
@@ -335,6 +333,19 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
           [Op.iLike]: `%${search_query}%`,
         },
       },
+        Sequelize.literal(
+      `address->>'district' ILIKE '%${search_query}%'`
+    ),
+
+       Sequelize.literal(
+      `address->>'place' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'state' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'country' ILIKE '%${search_query}%'`
+    ),
      
     ];
   }
@@ -358,7 +369,6 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     data: donors,
   });
 });
-
 
 
 
