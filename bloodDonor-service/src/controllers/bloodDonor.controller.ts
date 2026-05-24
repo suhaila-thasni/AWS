@@ -254,6 +254,7 @@ const COMPATIBILITY_MAP: Record<string, string[]> = {
 
 // ✅ handle array query params
 
+
 export const getDonors = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   let {
     bloodGroup,
@@ -264,6 +265,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     state,
     district,
     name,
+    search_query,
   }: any = req.query;
 
  
@@ -275,6 +277,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
                 if (Array.isArray(state)) state = state[0];
                     if (Array.isArray(district)) district = district[0];
                         if (Array.isArray(name)) name = name[0];
+                        if (Array.isArray(search_query)) search_query = search_query[0];
 
 
   
@@ -325,6 +328,17 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
   }
 
 
+   if (search_query) {
+    where[Op.or] = [
+      {
+        name: {
+          [Op.iLike]: `%${search_query}%`,
+        },
+      },
+     
+    ];
+  }
+
   const donors = await BloodDonor.findAll({
     where,
     order: [["createdAt", "DESC"]],
@@ -344,6 +358,7 @@ export const getDonors = asyncHandler(async (req: Request, res: Response): Promi
     data: donors,
   });
 });
+
 
 
 
