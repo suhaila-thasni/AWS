@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Speciality from "../models/speciality.model";
 import { publishEvent } from "../events/publisher";
-
 import { httpClient } from "../utils/httpClient";
+import dotenv from "dotenv";
+import { Op } from "sequelize";
+dotenv.config();
 
 // REGISTER - POST /speciality/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
@@ -30,7 +32,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
 
   // 2. Validate Hospital Existence via Hospital Service
   try {
-    await httpClient.get(`http://hospital-service:3009/hospital/${hospitalId}`, {
+    await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
       headers: { Authorization: authHeader }
     });
   } catch (error: any) {
@@ -56,13 +58,11 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
 
   const newSpeciality = await Speciality.create({
    name, 
-   hospitalId,
   });
 
   await publishEvent("speciality_events", "SPECIALITY_REGISTERED", {
     specialityId: newSpeciality.id,
     name: newSpeciality.name,
-    hospitalId: newSpeciality.hospitalId,
   });
 
   res.status(201).json({
@@ -157,9 +157,46 @@ export const specialityDelete: any = asyncHandler(async (req: Request, res: Resp
 
 // GET ALL - GET /speciality
 export const getSpecialitys: any = asyncHandler(async (req: Request, res: Response) => {
-  const speciality = await Speciality.findAll();
 
-  if (speciality.length === 0) {
+    let {
+      name,
+      search_query,
+    } : any = req.query;
+
+      if (Array.isArray(name)) {
+    name = name[0];
+  }
+
+    const whereCondition: any = {
+      isDelete: false,
+    };
+
+    // Separate field filters
+    if (name) {
+      whereCondition.name = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+    if (search_query) {
+      whereCondition[Op.or] = [
+        {
+          name: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+      ];
+    }
+
+
+       const speciality : any = await Speciality.findAndCountAll({
+      where: whereCondition,
+      order: [["createdAt", "DESC"]],
+    });
+
+
+
+  if (speciality?.length === 0) {
     res.status(404).json({
       success: false,
       message: "No data found",
@@ -176,6 +213,5 @@ export const getSpecialitys: any = asyncHandler(async (req: Request, res: Respon
     error: null,
   });
 });
-
 
 
