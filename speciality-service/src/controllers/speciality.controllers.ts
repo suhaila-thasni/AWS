@@ -155,14 +155,14 @@ export const getSpecialitys: any = asyncHandler(async (req: Request, res: Respon
     }
 
 
-       const speciality : any = await Speciality.findAndCountAll({
+       const speciality  = await Speciality.findAndCountAll({
       where: whereCondition,
       order: [["createdAt", "DESC"]],
     });
 
 
 
-  if (speciality?.length === 0) {
+  if (speciality.count === 0) {
     res.status(404).json({
       success: false,
       message: "No data found",
