@@ -161,25 +161,61 @@ export const medicinremainderDelete: any = asyncHandler(async (req: any, res: Re
 });
 
 // GET ALL - GET /medicinremainder
-export const getMedicinremainder: any = asyncHandler(async (req: Request, res: Response) => {
-  const medicinremainder = await Medicinremainder.findAll();
+export const getMedicinremainder = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  let { userId, medicineName, search_query }: any = req.query;
+
+  // Normalize arrays
+  const extract = (val: any) => (Array.isArray(val) ? val[0] : val);
+
+  userId = extract(userId);
+  medicineName = extract(medicineName);
+  search_query = extract(search_query);
+
+  const whereClause: any = {};
+
+  // FIXED: correct field mapping
+  if (medicineName) {
+    whereClause.medicineName = {
+      [Op.iLike]: `%${medicineName}%`,
+    };
+  }
+
+  if (userId !== undefined) {
+    whereClause.userId = Number(userId);
+  }
+
+  // Global search
+  if (search_query) {
+    whereClause[Op.or] = [
+      {
+        medicineName: {
+          [Op.iLike]: `%${search_query}%`,
+        },
+      },
+    ];
+  }
+
+  const medicinremainder = await Medicinremainder.findAll({
+    where: whereClause,
+    order: [["createdAt", "DESC"]],
+  });
 
   if (medicinremainder.length === 0) {
-    res.status(404).json({
+   res.status(404).json({
       success: false,
       message: "No data found",
-      data: null,
+      data: [],
       error: { code: "NO_DATA_FOUND", details: null },
     });
-    return;
+     return ;
   }
 
   res.status(200).json({
     success: true,
-    status: "Success",
     data: medicinremainder,
     error: null,
   });
+   return ;
 });
 
 
