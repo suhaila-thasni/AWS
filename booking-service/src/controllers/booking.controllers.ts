@@ -288,23 +288,42 @@ export const bookingDelete: any = asyncHandler(
 
 // GET ALL - GET /booking
 
-export const getBookings = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { userId, hospitalId, doctorId, status, patient_name, doctor_name, phone,  patientId, department  }: any = req.query;
+export const getBookings = asyncHandler(async (req: Request, res: Response) : Promise<void> => {
+  let {
+    userId,
+    hospitalId,
+    doctorId,
+    department,
+    phone,
+    status,
+    doctor_name,
+    patient_name,
+    page = 1,
+    limit = 10,
+    search_query,
+  }: any = req.query;
 
-  if (Array.isArray(userId)) userId = userId[0];
-  if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-    if (Array.isArray(doctorId)) doctorId = doctorId[0];
-      if (Array.isArray(status)) status = status[0];
-         if (Array.isArray(patient_name)) patient_name = patient_name[0];
-            if (Array.isArray(doctor_name)) doctor_name = doctor_name[0];
-               if (Array.isArray(phone)) phone = phone[0];
-                  if (Array.isArray(patientId)) patientId = patientId[0];
-                        if (Array.isArray(department)) department = department[0];
+  // Normalize arrays
+  const extract = (val: any) => (Array.isArray(val) ? val[0] : val);
 
+  userId = extract(userId);
+  hospitalId = extract(hospitalId);
+  doctorId = extract(doctorId);
+  department = extract(department);
+  phone = extract(phone);
+  status = extract(status);
+  doctor_name = extract(doctor_name);
+  page = extract(page);
+  limit = extract(limit);
+  search_query = extract(search_query);
+  patient_name = extract(patient_name);
 
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
 
   const whereClause: any = {};
 
+  // Filters
   if (userId !== undefined) {
     whereClause.userId = Number(userId);
   }
@@ -313,55 +332,84 @@ export const getBookings = asyncHandler(async (req: Request, res: Response): Pro
     whereClause.hospitalId = Number(hospitalId);
   }
 
-    if (doctorId !== undefined) {
+  if (doctorId !== undefined) {
     whereClause.doctorId = Number(doctorId);
   }
 
-     if (patientId !== undefined) {
-    whereClause.patientId = Number(patientId);
+  if (department) {
+    whereClause.department = {
+      [Op.iLike]: `%${department}%`,
+    };
   }
 
-      if (department !== undefined) {
-    whereClause.doctor_department = department;
+  if (phone) {
+    whereClause.patient_phone = {
+      [Op.iLike]: `%${phone}%`,
+    };
   }
 
-
-    if (status !== undefined) {
+  if (status) {
     whereClause.status = status;
   }
 
+  if (doctor_name) {
+    whereClause.doctor_name = {
+      [Op.iLike]: `%${doctor_name}%`,
+    };
+  }
 
-    if (patient_name !== undefined) {
-    whereClause.patient_name = patient_name;
+   if (patient_name) {
+    whereClause.patient_name = {
+      [Op.iLike]: `%${patient_name}%`,
+    };
   }
 
 
-    if (phone !== undefined) {
-    whereClause.patient_phone = phone;
+  // Global search
+  if (search_query) {
+    whereClause[Op.or] = [
+      { doctor_name: { [Op.iLike]: `%${search_query}%` } },
+      { department: { [Op.iLike]: `%${search_query}%` } },
+      { patient_phone: { [Op.iLike]: `%${search_query}%` } },
+      { designation: { [Op.iLike]: `%${search_query}%` } },
+      { staffType: { [Op.iLike]: `%${search_query}%` } },
+      { gender: { [Op.iLike]: `%${search_query}%` } },
+      { staffId: { [Op.iLike]: `%${search_query}%` } },
+       { patient_name: { [Op.iLike]: `%${search_query}%` } },
+    ];
   }
 
-  
-    if (doctor_name !== undefined) {
-    whereClause.doctor_name = doctor_name;
-  }
-
-
-  const booking = await Booking.findAll({
+  // IMPORTANT: pagination query
+  const { count, rows } = await Booking.findAndCountAll({
     where: whereClause,
-      order: [["createdAt", "DESC"]],
+    limit: limitNum,
+    offset: (pageNum - 1) * limitNum,
+    order: [["createdAt", "DESC"]],
   });
 
-  if (!booking.length) {
-    res.status(404).json({
+  if (count === 0) {
+   res.status(404).json({
       success: false,
       message: "No data found",
-      data: null,
+      data: [],
     });
-    return;
+    return ;
   }
+
+  const totalPages = Math.ceil(count / limitNum);
 
   res.status(200).json({
     success: true,
-    data: booking,
+    data: rows,
+    pagination: {
+      totalItems: count,
+      totalPages,
+      currentPage: pageNum,
+      limit: limitNum,
+      hasNextPage: pageNum < totalPages,
+      hasPreviousPage: pageNum > 1,
+    },
   });
+  return ;
 });
+
