@@ -496,46 +496,197 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
 
 // GET ALL - GET /hospital 
 
+
 export const getHospital = asyncHandler(async (req: Request, res: Response): Promise<void> => {
 
-  let { type }: any = req.query;
+   const normalizeQuery = (value: any) =>
+      Array.isArray(value) ? value[0] : value;
 
-  // ✅ FIX: convert array → string
-  if (Array.isArray(type)) {
-    type = type[0];
-  }
+    let {
+      speciality,
+      name,
+    country,
+    state,
+      status,
+      district,
+      place,
+      search_query,
+      hospitalId,
+      pincode,
+      page = 1,
+      limit = 10,
+    }: any = req.query;
 
-  // ✅ FIX: ensure string
-  type = type?.toString();
+    speciality = normalizeQuery(speciality);
+    hospitalId = normalizeQuery(hospitalId);
 
-  const whereClause: any = {};
+    name = normalizeQuery(name);
+    status = normalizeQuery(status);
+   country = normalizeQuery(country);
+    state = normalizeQuery(state);
+    district = normalizeQuery(district);
+    place = normalizeQuery(place);
+    pincode = normalizeQuery(pincode);
+    search_query = normalizeQuery(search_query);
 
-  if (type) {
-    whereClause.type = {
-      [Op.iLike]: type,
-    };
-  }
 
-  const hospital = await Hospital.findAll({
-    where: whereClause,
-  });
+    const whereClause: any = {};
 
-  if (hospital.length === 0) {
-     res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
+    const pageNum = Math.max(Number(page) || 1, 1);
+    const limitNum = Math.max(Number(limit) || 10, 1);
+
+    // Hospital filter
+    
+
+    if (hospitalId && !isNaN(Number(hospitalId))) {
+      whereClause.hospitalId = Number(hospitalId);
+    }
+
+    // Status filter
+    if (status !== undefined) {
+      whereClause.isActive = status === "true";
+    }
+
+    // Name filter
+    if (name) {
+      whereClause.displayName = {
+        [Op.iLike]: `%${name}%`,
+      };
+    }
+
+    // Speciality filter
+    if (speciality) {
+      whereClause.type = {
+        [Op.iLike]: `%${speciality}%`,
+      };
+    }
+
+
+     // JSONB address filters
+    const andConditions: any[] = [];
+
+    if (pincode && !isNaN(Number(pincode))) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.pincode"), "text"),
+          String(pincode)
+        )
+      );
+    }
+
+    if (place) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.place"), "text"),
+          {
+            [Op.iLike]: `%${place}%`,
+          }
+        )
+      );
+    }
+
+    if (country) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.country"), "text"),
+          {
+            [Op.iLike]: `%${country}%`,
+          }
+        )
+      );
+    }
+
+    if (state) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.state"), "text"),
+          {
+            [Op.iLike]: `%${state}%`,
+          }
+        )
+      );
+    }
+
+    if (district) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(Sequelize.json("address.district"), "text"),
+          {
+            [Op.iLike]: `%${district}%`,
+          }
+        )
+      );
+    }
+
+    // Search query
+    if (search_query) {
+      whereClause[Op.or] = [
+        {
+          name: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          email: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+        {
+          phone: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+     
+        {
+          type: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+
+    Sequelize.literal(
+      `address->>'district' ILIKE '%${search_query}%'`
+    ),
+
+       Sequelize.literal(
+      `address->>'place' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'state' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'country' ILIKE '%${search_query}%'`
+    ),
+      
+      ];
+    }
+
+    const hospital = await Hospital.findAndCountAll({
+      where: whereClause,
+      limit: limitNum,
+      offset: (pageNum - 1) * limitNum,
+      order: [["createdAt", "DESC"]],
     });
 
-    return;
-  }
+    const totalPages = Math.ceil(hospital.count / limitNum);
 
-  res.status(200).json({
-    success: true,
-    data: hospital,
-  });
-  return;
+    res.status(200).json({
+      success: true,
+      data: hospital.rows,
+      pagination: {
+        totalItems: hospital.count,
+        totalPages,
+        currentPage: pageNum,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPreviousPage: pageNum > 1,
+      },
+      error: null,
+    });
+  
+
+
 });
+
 
 
 // REFRESH TOKEN - POST /hospital/refresh
