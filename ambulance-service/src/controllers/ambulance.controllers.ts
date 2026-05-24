@@ -7,18 +7,8 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { httpClient } from "../utils/httpClient";
 import { Op, Sequelize } from "sequelize";
-dotenv.config();
 
-// Helper to set refresh token cookie
-const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
-    path: "/",
-  });
-};
+dotenv.config();
 
 const APPLE_TEST_NUMBER = "9999999999";
 const APPLE_TEST_OTP = "123456";
@@ -34,7 +24,9 @@ const getTwilioClient = () => {
 };
 
 
+
 // REGISTER - POST /ambulance/register
+
 export const Registeration: any = asyncHandler(async (req: any, res: Response): Promise<void> => {
   const { serviceName, address, phone, vehicleType, userId, hospitalId } = req.body;
   
@@ -115,6 +107,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response): 
   return;
 });
 
+
 // LOGIN WITH PHONE (OTP REQUEST) - POST /ambulance/login/phone
 export const loginWithPhone: any = asyncHandler(async (req: Request, res: Response) => {
   const { phone } = req.body;
@@ -187,17 +180,10 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   // Clear OTP fields after verification
   await ambulance.update({ otp: null as any, otpExpiry: null as any });
 
-
-  const jwtKey = process.env.JWT_SECRET;
-
+  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
   const token = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance" }, jwtKey, {
     expiresIn: "15m"
   });
-  const refreshToken = jwt.sign({ id: ambulance.id, name: ambulance.serviceName, role: "ambulance" }, jwtKey, {
-    expiresIn: "2w"
-  });
-
-  setRefreshTokenCookie(res, refreshToken);
 
   const ambulanceJson = ambulance.toJSON();
   
@@ -305,8 +291,6 @@ export const ambulanceDelete: any = asyncHandler(async (req: Request, res: Respo
 
 // GET ALL - GET /ambulance
 
-
-
 export const getAmbulaces = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     let {
@@ -319,6 +303,7 @@ export const getAmbulaces = asyncHandler(
       district,
       pincode,
       vehicleType,
+      search_query,
     }: any = req.query;
 
     // Handle array query params
@@ -330,7 +315,9 @@ export const getAmbulaces = asyncHandler(
     if (Array.isArray(name)) name = name[0];
     if (Array.isArray(place)) place = place[0];
     if (Array.isArray(pincode)) pincode = pincode[0];
-     if (Array.isArray(vehicleType)) vehicleType = vehicleType[0];
+    if (Array.isArray(vehicleType)) vehicleType = vehicleType[0];
+    if (Array.isArray(search_query)) search_query = search_query[0];
+
 
     const where: any = {};
 
@@ -411,6 +398,37 @@ export const getAmbulaces = asyncHandler(
         )
       );
     }
+
+ if (search_query) {
+  where[Op.or] = [
+    {
+      serviceName: {
+        [Op.iLike]: `%${search_query}%`,
+      },
+    },
+
+     {
+      vehicleType: {
+        [Op.iLike]: `%${search_query}%`,
+      },
+    },
+
+    Sequelize.literal(
+      `address->>'district' ILIKE '%${search_query}%'`
+    ),
+
+       Sequelize.literal(
+      `address->>'place' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'state' ILIKE '%${search_query}%'`
+    ),
+       Sequelize.literal(
+      `address->>'country' ILIKE '%${search_query}%'`
+    ),
+
+  ];
+}
 
     // Add AND conditions
     if (andConditions.length > 0) {
