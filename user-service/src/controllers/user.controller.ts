@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { userService } from "../services/user.service";
@@ -6,10 +5,9 @@ import Patient from "../models/patient.model";
 import PatientVitals from "../models/patientVitals.model";
 import User from "../models/user.model";
 import jwt from "jsonwebtoken";
-import { generateToken } from "../services/jwt.service";
+import { generateToken, generateRefreshToken } from "../services/jwt.service";
 import { publishEvent } from "../events/publisher";
 import { Op } from "sequelize";
-
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -97,7 +95,6 @@ export const getUser: any = asyncHandler(async (req: Request, res: Response) => 
 
 export const updateUser: any = asyncHandler(async (req: Request, res: Response) => {
     try {
-      
       const user = await userService.updateUser(req.params.id, req.body);
       res.status(200).json({ success: true, message: "User updated successfully", data: user });
     } catch (error: any) {
@@ -169,6 +166,7 @@ export const saveExpoToken: any = asyncHandler(async (req: Request, res: Respons
   }
 });
 
+
 export const testPushNotification: any = asyncHandler(async (req: Request, res: Response) => {
   try {
     const result = await userService.testPushNotification(req.params.id);
@@ -203,7 +201,7 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 
     if (finalUserId) {
       // Condition 1: userId is provided in body
-      const userExists = await User.findByPk(finalUserId);
+      const userExists = await User.findOne({ where: { id: finalUserId, isDelete: false } });
       if (!userExists) {
         res.status(400).json({ success: false, message: `User with ID ${finalUserId} does not exist.` });
         return;
@@ -226,7 +224,7 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
           finalUserId = existingUserByEmail.id;
         } else {
           const newUser = await User.create({
-            name: name,
+            name: name || mobileNumber,
             email: userEmail,
             phone: mobileNumber,
             roleId: 3 // Default patient role
@@ -241,7 +239,6 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
               email: newUser.email,
               roleId: newUser.roleId,
               name,
-           
             });
           } catch (err) {
             console.error("Failed to publish USER_REGISTERED event for auto-created user:", err);
@@ -289,7 +286,8 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
     try {
       await publishEvent("patient_events", "PATIENT_REGISTERED", {
         patientId: result?.id,
-        userId: userId || null,
+        userId: finalUserId,
+        hospitalId: hospitalId,
         patientName: name,
         phone: mobileNumber
       });
@@ -304,159 +302,152 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
     });
   } catch (error: any) {
     await t.rollback();
-    res.status(500).json({ success: false, message: error.message || "Failed to create patient" });
+    console.error("🔥 Error in createPatient controller:", error);
+    
+    if (error.name === "SequelizeValidationError") {
+      const messages = error.errors?.map((e: any) => `${e.path}: ${e.message}`) || [error.message];
+      res.status(400).json({
+        success: false,
+        message: "Validation failed: " + messages.join(", "),
+        error: { code: "VALIDATION_ERROR", details: error.errors },
+      });
+      return;
+    }
+
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const field = error.errors?.[0]?.path || "field";
+      res.status(409).json({
+        success: false,
+        message: `Duplicate entry: ${field} already exists`,
+        error: { code: "DUPLICATE_ENTRY", details: field },
+      });
+      return;
+    }
+
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Failed to create patient",
+      error: error.stack || null,
+    });
   }
 });
 
 
 // GET ALL PATIENTS
 
-export const getPatients: any = asyncHandler(
-  async (req: Request, res: Response) => {
-    let {
-      name,
-      phone,
-      patientId,
-      addressLine,
-      hospitalId,
-      email,
-      guardianName,
-      page = 1,
-      limit = 10,
-      search_query,
-    } : any = req.query;
 
-      if (Array.isArray(name)) {
-    name = name[0];
-  }
+export const getPatients = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  let {
+    name,
+    phone,
+    patientId,
+    addressLine,
+    hospitalId,
+    email,
+    guardianName,
+    page = 1,
+    limit = 10,
+    search_query,
+  }: any = req.query;
 
-          if (Array.isArray(hospitalId)) {
-    hospitalId = hospitalId[0];
-  }
+  // Normalize arrays
+  const extract = (val: any) => (Array.isArray(val) ? val[0] : val);
 
-      if (Array.isArray(phone)) {
-    phone = phone[0];
-  }
+  name = extract(name);
+  phone = extract(phone);
+  patientId = extract(patientId);
+  addressLine = extract(addressLine);
+  hospitalId = extract(hospitalId);
+  email = extract(email);
+  guardianName = extract(guardianName);
+  page = extract(page);
+  limit = extract(limit);
+  search_query = extract(search_query);
 
-      if (Array.isArray(patientId)) {
-    patientId = patientId[0];
-  }
-    if (Array.isArray(addressLine)) {
-    addressLine = addressLine[0];
-  }
-    if (Array.isArray(email)) {
-    email = email[0];
-  }
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
 
-    if (Array.isArray(guardianName)) {
-    guardianName = guardianName[0];
-  }  if (Array.isArray(page)) {
-    page = page[0];
-  }  if (Array.isArray(limit)) {
-    limit = limit[0];
-  }  if (Array.isArray(search_query)) {
-    search_query = search_query[0];
-  }
+  const whereCondition: any = {
+    isDelete: false,
+  };
 
-
-
-    const whereCondition: any = {
-      isDelete: false,
+  // Field filters
+  if (name) {
+    whereCondition.name = {
+      [Op.iLike]: `%${name}%`,
     };
-
-    // Separate field filters
-    if (name) {
-      whereCondition.name = {
-        [Op.iLike]: `%${name}%`,
-      };
-    }
-
-        if (hospitalId) {
-      whereCondition.hospitalId = Number(hospitalId);
-    }
-
-    if (phone) {
-      whereCondition.phone = {
-        [Op.iLike]: `%${phone}%`,
-      };
-    }
-
-    if (patientId) {
-      whereCondition.patientId = {
-        [Op.iLike]: `%${patientId}%`,
-      };
-    }
-
-    if (addressLine) {
-      whereCondition.addressLine = {
-        [Op.iLike]: `%${addressLine}%`,
-      };
-    }
-
-    if (email) {
-      whereCondition.email = {
-        [Op.iLike]: `%${email}%`,
-      };
-    }
-
-    if (guardianName) {
-      whereCondition.guardianName = {
-        [Op.iLike]: `%${guardianName}%`,
-      };
-    }
-
-    // Global search
-    if (search_query) {
-      whereCondition[Op.or] = [
-        {
-          name: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          phone: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          patientId: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          addressLine: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          email: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          guardianName: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-      ];
-    }
-
-    const patients = await Patient.findAndCountAll({
-      where: whereCondition,
-      limit: Number(limit),
-      offset: (Number(page) - 1) * Number(limit),
-      order: [["createdAt", "DESC"]],
-    });
-
-    res.status(200).json({
-      success: true,
-      total: patients.count,
-      currentPage: Number(page),
-      totalPages: Math.ceil(patients.count / Number(limit)),
-      data: patients.rows,
-    });
   }
-);
+
+  if (hospitalId !== undefined) {
+    whereCondition.hospitalId = Number(hospitalId);
+  }
+
+  if (phone) {
+    whereCondition.phone = {
+      [Op.iLike]: `%${phone}%`,
+    };
+  }
+
+  if (patientId) {
+    whereCondition.patientId = {
+      [Op.iLike]: `%${patientId}%`,
+    };
+  }
+
+  if (addressLine) {
+    whereCondition.addressLine = {
+      [Op.iLike]: `%${addressLine}%`,
+    };
+  }
+
+  if (email) {
+    whereCondition.email = {
+      [Op.iLike]: `%${email}%`,
+    };
+  }
+
+  if (guardianName) {
+    whereCondition.guardianName = {
+      [Op.iLike]: `%${guardianName}%`,
+    };
+  }
+
+  // Global search (kept separate)
+  if (search_query) {
+    whereCondition[Op.or] = [
+      { name: { [Op.iLike]: `%${search_query}%` } },
+      { phone: { [Op.iLike]: `%${search_query}%` } },
+      { patientId: { [Op.iLike]: `%${search_query}%` } },
+      { addressLine: { [Op.iLike]: `%${search_query}%` } },
+      { email: { [Op.iLike]: `%${search_query}%` } },
+      { guardianName: { [Op.iLike]: `%${search_query}%` } },
+    ];
+  }
+
+  const patients = await Patient.findAndCountAll({
+    where: whereCondition,
+    limit: limitNum,
+    offset: (pageNum - 1) * limitNum,
+    order: [["createdAt", "DESC"]],
+  });
+
+  const totalPages = Math.ceil(patients.count / limitNum);
+
+  res.status(200).json({
+    success: true,
+    data: patients.rows,
+    pagination: {
+      totalItems: patients.count,
+      totalPages,
+      currentPage: pageNum,
+      limit: limitNum,
+      hasNextPage: pageNum < totalPages,
+      hasPreviousPage: pageNum > 1,
+    },
+    error: null,
+  });
+   return;
+});
 
 
 // GET BLACKLISTED PATIENTS
@@ -485,7 +476,8 @@ export const getBlacklistedPatients: any = asyncHandler(async (req: Request, res
 
 // GET ONE PATIENT (with all vitals history)
 export const getPatient: any = asyncHandler(async (req: Request, res: Response) => {
-  const patient = await Patient.findByPk(req.params.id, {
+  const patient = await Patient.findOne({
+    where: { id: req.params.id, isDelete: false },
     include: [
       { model: PatientVitals, as: "vitals", order: [["createdAt", "DESC"]] },
       { model: User, as: "user", attributes: ["id", "name", "email", "phone"] },
@@ -511,7 +503,7 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
   const t = await Patient.sequelize!.transaction();
   
   try {
-    const patient = await Patient.findByPk(req.params.id);
+    const patient = await Patient.findOne({ where: { id: req.params.id, isDelete: false } });
 
     if (!patient) {
       res.status(404).json({ success: false, message: "Patient not found" });
@@ -520,14 +512,14 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
 
     // 1. Update Patient Profile Fields
     const {
-     name, bloodGroup, gender, maritalStatus,
+      name, bloodGroup, gender, maritalStatus,
       patientType, age, dob, mobileNumber, emergencyNumber,
       guardianName, addressLine, location, email, password, userId, hospitalId
     } = req.body;
 
     // 1.5 Validate userId (if provided)
     if (userId) {
-      const userExists = await User.findByPk(userId);
+      const userExists = await User.findOne({ where: { id: userId, isDelete: false } });
       if (!userExists) {
         res.status(400).json({ success: false, message: `User with ID ${userId} does not exist.` });
         return;
@@ -535,7 +527,7 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
     }
 
     await patient.update({
-       name, bloodGroup, gender, maritalStatus,
+      name, bloodGroup, gender, maritalStatus,
       patientType, age, dob, mobileNumber, emergencyNumber,
       guardianName, addressLine, location, email, password, userId, hospitalId
     }, { transaction: t });
@@ -580,7 +572,8 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
       await publishEvent("patient_events", "PATIENT_UPDATED", {
         patientId: patient.id,
         userId: patient.userId || null,
-        patientName: name,
+        hospitalId: patient.hospitalId,
+        patientName: `${name || patient.name} `,
       });
     } catch (err) {
       console.error("Failed to publish PATIENT_UPDATED event:", err);
@@ -594,7 +587,7 @@ export const updatePatient: any = asyncHandler(async (req: Request, res: Respons
 
 // DELETE PATIENT
 export const deletePatient: any = asyncHandler(async (req: Request, res: Response) => {
-  const patient = await Patient.findByPk(req.params.id);
+  const patient = await Patient.findOne({ where: { id: req.params.id, isDelete: false } });
 
   if (!patient) {
     res.status(404).json({ success: false, message: "Patient not found" });
@@ -617,6 +610,7 @@ export const deletePatient: any = asyncHandler(async (req: Request, res: Respons
     await publishEvent("patient_events", "PATIENT_DELETED", {
       patientId: patient.id,
       userId: patient.userId || null,
+      hospitalId: patient.hospitalId,
     });
   } catch (err) {
     console.error("Failed to publish PATIENT_DELETED event:", err);
@@ -627,7 +621,6 @@ export const deletePatient: any = asyncHandler(async (req: Request, res: Respons
 export const refreshUserToken: any = asyncHandler(async (req: Request, res: Response) => {
   const refreshToken = req.cookies?.refreshToken;
 
-
   if (!refreshToken) {
     res.status(401).json({ success: false, message: "Refresh token missing" });
     return;
@@ -637,7 +630,7 @@ export const refreshUserToken: any = asyncHandler(async (req: Request, res: Resp
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findOne({ where: { id: decoded.id, isDelete: false } });
 
     if (!user) {
       res.status(401).json({ success: false, message: "Invalid refresh token" });
@@ -665,3 +658,4 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
   });
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
+
