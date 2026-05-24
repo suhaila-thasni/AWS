@@ -1,4 +1,3 @@
-
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/db";
 import User from "./user.model";
@@ -20,11 +19,10 @@ interface IPatient {
 
   name: string;
 
-
-  bloodGroup: string;
+  bloodGroup?: string;
   gender: string;
   maritalStatus?: string;
-  patientType: string;
+  patientType?: string;
 
   age?: number;
   dob?: Date;
@@ -42,7 +40,6 @@ interface IPatient {
 
   vitals?: any[];
 
-  // ✅ Added Soft Delete Fields
   deleteDate?: Date;
   isActive?: boolean;
   isDelete?: boolean;
@@ -56,12 +53,11 @@ class Patient extends Model<IPatient> implements IPatient {
   public hospitalId!: number;
 
   public name!: string;
- 
 
-  public bloodGroup!: string;
+  public bloodGroup?: string;
   public gender!: string;
   public maritalStatus!: string;
-  public patientType!: string;
+  public patientType?: string;
 
   public age!: number;
   public dob!: Date;
@@ -79,7 +75,6 @@ class Patient extends Model<IPatient> implements IPatient {
 
   public readonly vitals?: any[];
 
-  // ✅ Added Soft Delete Fields
   public deleteDate?: Date;
   public isActive?: boolean;
   public isDelete?: boolean;
@@ -123,8 +118,6 @@ Patient.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-
-  
 
     // ENUMS
     bloodGroup: {
@@ -189,7 +182,7 @@ Patient.init(
 
     addressLine: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
 
     // Location JSON
@@ -233,7 +226,6 @@ Patient.init(
     modelName: "Patient",
     tableName: "patients",
     timestamps: true,
-    paranoid: true,
   }
 );
 
