@@ -2,16 +2,17 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import BloodBank from "../models/bloodBank.model";
 import { httpClient } from "../utils/httpClient";
+import { publishEvent } from "../events/publisher";
+import { Op } from "sequelize";
 import dotenv from "dotenv";
 dotenv.config();
-import { Op } from "sequelize";
 
 const VALID_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
 // 🧩 Create or Update Stock (scoped by hospitalId)
 export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) => {
   const { hospitalId, bloodGroup, count } = req.body;
-  
+
 
   // 🏥 Validate Hospital (Cross-Service: hospital-service)
   try {
@@ -43,6 +44,14 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
     // ⚔️ Add to existing count
     const newCount = Number(stock.count) + Number(count || 0);
     await stock.update({ count: newCount });
+    
+    await publishEvent("blood_bank_events", "STOCK_UPDATED", {
+      hospitalId,
+      bloodGroup,
+      count: newCount,
+      action: "added"
+    });
+
     res.status(200).json({ 
       success: true, 
       message: `Added ${count} units. New total for ${bloodGroup} is ${newCount} units for hospital ${hospitalId}`, 
@@ -51,6 +60,13 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
   } else {
     // ⚔️ Create new record
     stock = await BloodBank.create({ hospitalId, bloodGroup, count: count || 0 });
+
+    await publishEvent("blood_bank_events", "STOCK_CREATED", {
+      hospitalId,
+      bloodGroup,
+      count: count || 0
+    });
+
     res.status(201).json({ 
       success: true, 
       message: `Blood group ${bloodGroup} record created with ${count} units for hospital ${hospitalId}`, 
@@ -60,51 +76,51 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
 });
 
 // 🔍 Get All Inventory
+export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
+
+  let {
+    hospitalId,
+    name,
+    search_query,
+  }: any = req.query;
+
+    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+  if (Array.isArray(name)) name = name[0];
+  if (Array.isArray(search_query)) search_query = search_query[0];
 
 
-export const getAllStock = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  let { hospitalId, bloodGroup }: any = req.query;
+    const whereClause: any = {
+    isDelete: false,
+  };
 
-  // convert array → single value
-  if (Array.isArray(hospitalId)) {
-    hospitalId = hospitalId[0];
-  }
-
-    if (Array.isArray(bloodGroup)) {
-    bloodGroup = bloodGroup[0];
-  }
-
-  const whereClause: any = {};
-
+  // hospitalId
   if (hospitalId) {
-    whereClause.hospitalId = Number(hospitalId); // ✅ ensure integer match
+    whereClause.hospitalId = Number(hospitalId);
+  }
+    if (name) {
+    whereClause.name = {
+      [Op.iLike]: `%${name}%`,
+    };
   }
 
-   if (bloodGroup) {
-      whereClause.bloodGroup = {
-        [Op.iLike]: `%${bloodGroup}%`,
-      };
-    }
-
-  const bloodBank = await BloodBank.findAll({
-    where: whereClause,
-    order: [["createdAt", "DESC"]],
-  });
-
-  if (bloodBank.length === 0) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
-    });
-    return;
+  if (search_query) {
+    whereClause[Op.or] = [
+      {
+        name: {
+          [Op.iLike]: `%${search_query}%`,
+        },
+      },
+    
+    ];
   }
 
-  res.status(200).json({
-    success: true,
-    data: bloodBank,
+  const stocks = await BloodBank.findAll({
+     where: whereClause,
+    order: [['bloodGroup', 'ASC']]
   });
+  res.status(200).json({ success: true, count: stocks.length, data: stocks });
 });
+
 
 
 // 🔍 Get All Stocks by Hospital ID
@@ -151,7 +167,16 @@ export const updateStockById = asyncHandler(async (req: Request, res: Response) 
     return;
   }
   
+  
   await stock.update({ count });
+
+  await publishEvent("blood_bank_events", "STOCK_UPDATED", {
+    hospitalId: stock.hospitalId,
+    bloodGroup: stock.bloodGroup,
+    count: count,
+    action: "manual_update"
+  });
+
   res.status(200).json({ success: true, message: "Inventory updated successfully", data: stock });
 });
 
