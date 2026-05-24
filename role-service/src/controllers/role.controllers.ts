@@ -4,6 +4,7 @@ import Role from "../models/role.model";
 import { publishEvent } from "../events/publisher";
 import axios from "axios";
 import dotenv from "dotenv";
+import { Op } from "sequelize";
 dotenv.config();
 
 // REGISTER - POST /role
@@ -251,65 +252,91 @@ export const roleDelete: any = asyncHandler(async (req: Request, res: Response) 
 });
 
 // GET ALL - GET /role
-export const getRole: any = asyncHandler(
-  async (req: Request, res: Response) : Promise<void> =>  {
+export const getRole: any = asyncHandler(async (req: Request, res: Response) => {
 
-    let { hospitalId, labId, pharmacyId }: any = req.query;
+  let { hospitalId, labId, pharmacyId, name, page = 1, limit = 10, search_query }: any = req.query;
+
+
 
     if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-    if (Array.isArray(labId)) labId = labId[0];
+        if (Array.isArray(labId)) labId = labId[0];
     if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
+     if (Array.isArray(page)) {
+    page = page[0];
+  }  if (Array.isArray(limit)) {
+    limit = limit[0];
+  }  if (Array.isArray(search_query)) {
+    search_query = search_query[0];
+  }
 
-    const whereClause: any = {};
 
-    if (hospitalId !== undefined) {
-      whereClause.hospitalId = Number(hospitalId);
-    }
+
+      const whereClause: any = {};
+
+
+  if (hospitalId !== undefined) {
+    whereClause.hospitalId = Number(hospitalId);
+  }
 
     if (labId !== undefined) {
-      whereClause.labId = Number(labId);
-    }
+    whereClause.labId = Number(labId);
+  }
 
     if (pharmacyId !== undefined) {
-      whereClause.pharmacyId = Number(pharmacyId);
+    whereClause.pharmacyId = Number(pharmacyId);
+  }
+
+   if (search_query) {
+      whereClause[Op.or] = [
+        {
+          name: {
+            [Op.iLike]: `%${search_query}%`,
+          },
+        },
+      
+      ];
     }
 
-    let role: any[] = [];
 
-    // ✅ Only fetch role if query exists
-    if (hospitalId || labId || pharmacyId) {
-      role = await Role.findAll({
-        where: whereClause,
-      });
-    }
+  const role  = await Role.findAndCountAll({
+    where: whereClause,
+     limit: Number(limit),
+      offset: (Number(page) - 1) * Number(limit),
+      order: [["createdAt", "DESC"]],
+  });
 
-    // ✅ Always fetch admin
+
+  
+
     const admin = await Role.findAll();
 
-    // ✅ Only check empty when query exists
-    if ((hospitalId || labId || pharmacyId) && role.length === 0) {
-       res.status(404).json({
-        success: false,
-        message: "No data found",
-        data: null,
-        error: {
-          code: "NO_DATA_FOUND",
-          details: null,
-        },
-      });
-      return;
-    }
+
+  if (role.count === 0) {
+    res.status(404).json({
+      success: false,
+      message: "No data found",
+      data: null,
+      admin,
+      error: { code: "NO_DATA_FOUND", details: null },
+    });
+    return;
+  }
+
+
 
     res.status(200).json({
       success: true,
-      status: "Success",
-      data: role, // [] if no query
+      data: role.rows,
       admin: admin.slice(0, 5),
-      error: null,
+      pagination: {
+      totalItems: role.count,
+      totalPages: Math.ceil(role.count / Number(limit)),
+      currentPage: Number(page),
+      limit: Number(limit),
+      hasNextPage: page < Math.ceil(role.count / Number(limit)),
+      hasPreviousPage: page > 1,
+    },
+    error: null,
     });
-  }
-);
 
-
-
-
+});
