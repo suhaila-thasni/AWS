@@ -17,7 +17,6 @@ export interface ISpeciality {
   picture?: IPicture;
   isActive?: boolean;
   isDelete?: boolean;
-  hospitalId?: number;
 }
 
 /* =======================
@@ -26,7 +25,7 @@ export interface ISpeciality {
 
 type SpecialityCreationAttributes = Optional<
   ISpeciality,
-  "id" | "picture" | "isActive" | "isDelete" | "hospitalId"
+  "id" | "picture" | "isActive" | "isDelete" 
 >;
 
 /* =======================
@@ -42,7 +41,6 @@ class Speciality
   public picture?: IPicture;
   public isActive?: boolean;
   public isDelete?: boolean;
-  public hospitalId?: number;
 
   // timestamps
   public readonly createdAt!: Date;
@@ -60,11 +58,6 @@ Speciality.init(
       autoIncrement: true,
       primaryKey: true,
     },
-
-    hospitalId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },  
 
     name: {
       type: DataTypes.STRING,
