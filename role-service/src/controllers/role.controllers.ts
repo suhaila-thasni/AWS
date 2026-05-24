@@ -252,91 +252,90 @@ export const roleDelete: any = asyncHandler(async (req: Request, res: Response) 
 });
 
 // GET ALL - GET /role
-export const getRole: any = asyncHandler(async (req: Request, res: Response) => {
-
-  let { hospitalId, labId, pharmacyId, name, page = 1, limit = 10, search_query }: any = req.query;
 
 
+export const getRole = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  let {
+    hospitalId,
+    labId,
+    pharmacyId,
+    page = 1,
+    limit = 10,
+    search_query,
+  }: any = req.query;
 
-    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-        if (Array.isArray(labId)) labId = labId[0];
-    if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
-     if (Array.isArray(page)) {
-    page = page[0];
-  }  if (Array.isArray(limit)) {
-    limit = limit[0];
-  }  if (Array.isArray(search_query)) {
-    search_query = search_query[0];
-  }
+  if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+  if (Array.isArray(labId)) labId = labId[0];
+  if (Array.isArray(pharmacyId)) pharmacyId = pharmacyId[0];
+  if (Array.isArray(page)) page = page[0];
+  if (Array.isArray(limit)) limit = limit[0];
+  if (Array.isArray(search_query)) search_query = search_query[0];
 
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
 
-
-      const whereClause: any = {};
-
+  const whereClause: any = {};
 
   if (hospitalId !== undefined) {
     whereClause.hospitalId = Number(hospitalId);
   }
 
-    if (labId !== undefined) {
+  if (labId !== undefined) {
     whereClause.labId = Number(labId);
   }
 
-    if (pharmacyId !== undefined) {
+  if (pharmacyId !== undefined) {
     whereClause.pharmacyId = Number(pharmacyId);
   }
 
-   if (search_query) {
-      whereClause[Op.or] = [
-        {
-          name: {
-            [Op.iLike]: `%${search_query}%`,
-          },
+  if (search_query) {
+    whereClause[Op.or] = [
+      {
+        name: {
+          [Op.iLike]: `%${search_query}%`,
         },
-      
-      ];
-    }
+      },
+    ];
+  }
 
-
-  const role  = await Role.findAndCountAll({
+  const role = await Role.findAndCountAll({
     where: whereClause,
-     limit: Number(limit),
-      offset: (Number(page) - 1) * Number(limit),
-      order: [["createdAt", "DESC"]],
+    limit: limitNum,
+    offset: (pageNum - 1) * limitNum,
+    order: [["createdAt", "DESC"]],
   });
 
-
-  
-
-    const admin = await Role.findAll();
-
+  const admin = await Role.findAll({
+    limit: 5,
+    order: [["createdAt", "DESC"]],
+  });
 
   if (role.count === 0) {
-    res.status(404).json({
+     res.status(404).json({
       success: false,
       message: "No data found",
-      data: null,
+      data: [],
       admin,
       error: { code: "NO_DATA_FOUND", details: null },
     });
     return;
   }
 
+  const totalPages = Math.ceil(role.count / limitNum);
 
-
-    res.status(200).json({
-      success: true,
-      data: role.rows,
-      admin: admin.slice(0, 5),
-      pagination: {
+  res.status(200).json({
+    success: true,
+    data: role.rows,
+    admin,
+    pagination: {
       totalItems: role.count,
-      totalPages: Math.ceil(role.count / Number(limit)),
-      currentPage: Number(page),
-      limit: Number(limit),
-      hasNextPage: page < Math.ceil(role.count / Number(limit)),
-      hasPreviousPage: page > 1,
+      totalPages,
+      currentPage: pageNum,
+      limit: limitNum,
+      hasNextPage: pageNum < totalPages,
+      hasPreviousPage: pageNum > 1,
     },
     error: null,
-    });
-
+  });
+  return;
 });
