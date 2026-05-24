@@ -122,62 +122,54 @@ export const specialityDelete: any = asyncHandler(async (req: Request, res: Resp
 });
 
 // GET ALL - GET /speciality
-export const getSpecialitys: any = asyncHandler(async (req: Request, res: Response) => {
 
-    let {
-      name,
-      search_query,
-    } : any = req.query;
+export const getSpecialitys = asyncHandler(async (req: Request, res: Response) : Promise<void> => {
+  let { name, search_query }: any = req.query;
 
-      if (Array.isArray(name)) {
-    name = name[0];
+  if (Array.isArray(name)) name = name[0];
+  if (Array.isArray(search_query)) search_query = search_query[0];
+
+  const whereCondition: any = {
+    isDelete: false,
+  };
+
+  // Build OR search properly
+  const search = search_query || name;
+
+  if (search) {
+    whereCondition[Op.or] = [
+      {
+        name: {
+          [Op.iLike]: `%${search}%`,
+        },
+      },
+    ];
   }
 
-    const whereCondition: any = {
-      isDelete: false,
-    };
-
-    // Separate field filters
-    if (name) {
-      whereCondition.name = {
-        [Op.iLike]: `%${name}%`,
-      };
-    }
-
-    if (search_query) {
-      whereCondition[Op.or] = [
-        {
-          name: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-      ];
-    }
-
-
-       const speciality  = await Speciality.findAndCountAll({
-      where: whereCondition,
-      order: [["createdAt", "DESC"]],
-    });
-
-
+  const speciality = await Speciality.findAndCountAll({
+    where: whereCondition,
+    order: [["createdAt", "DESC"]],
+  });
 
   if (speciality.count === 0) {
-    res.status(404).json({
+  res.status(404).json({
       success: false,
       message: "No data found",
-      data: null,
+      data: [],
       error: { code: "NO_DATA_FOUND", details: null },
     });
-    return;
+    return ;
   }
 
   res.status(200).json({
     success: true,
-    status: "Success",
-    data: speciality,
+    data: speciality.rows,
+    count: speciality.count,
     error: null,
   });
+
+  return; 
 });
+
 
 
