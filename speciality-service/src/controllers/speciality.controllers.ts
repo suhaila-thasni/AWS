@@ -2,47 +2,13 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Speciality from "../models/speciality.model";
 import { publishEvent } from "../events/publisher";
-import { httpClient } from "../utils/httpClient";
 import dotenv from "dotenv";
 import { Op } from "sequelize";
 dotenv.config();
 
 // REGISTER - POST /speciality/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { name, hospitalId: bodyHospitalId } = req.body;
-  const tokenHospitalId = req.user?.id;
-  const authHeader = req.headers.authorization;
-
-  // 1. Security Check: If hospitalId is provided in body, it must match the token ID
-  if (bodyHospitalId && Number(bodyHospitalId) !== Number(tokenHospitalId)) {
-    res.status(403).json({
-      success: false,
-      message: "Security violation: The provided hospitalId does not match your authenticated account.",
-      error: { code: "HOSPITAL_ID_MISMATCH" }
-    });
-    return;
-  }
-
-  const hospitalId = tokenHospitalId; // Source of truth
-
-  if (!hospitalId) {
-    res.status(400).json({ success: false, message: "Hospital ID is required" });
-    return;
-  }
-
-  // 2. Validate Hospital Existence via Hospital Service
-  try {
-    await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
-      headers: { Authorization: authHeader }
-    });
-  } catch (error: any) {
-    res.status(404).json({
-      success: false,
-      message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
-      error: { code: "HOSPITAL_NOT_FOUND" }
-    });
-    return;
-  }
+  const { name } = req.body;
 
 
   const exist = await Speciality.findOne({ where: { name: name } });
