@@ -4,7 +4,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn(
-      'booking', // 👈 your table name
+      'bookings', // 👈 your table name
       'doctor_name',
       {
         type: Sequelize.STRING,
@@ -14,7 +14,7 @@ module.exports = {
     );
 
     await queryInterface.addColumn(
-      'booking',
+      'bookings',
       'doctor_department',
       {
         type: Sequelize.STRING,
@@ -25,8 +25,8 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('booking', 'doctor_name');
+    await queryInterface.removeColumn('bookings', 'doctor_name');
 
-    await queryInterface.removeColumn('booking', 'doctor_department');
+    await queryInterface.removeColumn('bookings', 'doctor_department');
   },
 };
