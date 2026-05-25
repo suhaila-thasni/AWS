@@ -3,17 +3,20 @@ import asyncHandler from "express-async-handler";
 import Booking from "../models/booking.model";
 import { publishEvent } from "../events/publisher";
 import { httpClient } from "../utils/httpClient";
+// import { sendPushNotification } from "../events/pushnotification";
+import { sendBookingPushNotifications } from "../utils/sendBookingPush";
 import axios from "axios";
 import dotenv from "dotenv";
-import { Op, Sequelize } from "sequelize";
+import { Op } from "sequelize";
 dotenv.config();
 
-// REGISTER - POST /boooking/register
-
+// REGISTER - POST /booking/register
 export const Registeration: any = asyncHandler(
   async (req: any, res: Response): Promise<void> => {
     const {
       patient_dob,
+      patient_age,
+      patient_gender,
       patient_name,
       patient_place,
       patient_phone,
@@ -24,7 +27,7 @@ export const Registeration: any = asyncHandler(
       displayName,
       booking_date,
       consulting_time,
-      status
+      booking_status
     } = req.body;
 
     
@@ -46,8 +49,9 @@ export const Registeration: any = asyncHandler(
     // ==============================
     // 3. VALIDATE HOSPITAL
     // ==============================
+    let hospitalRes: any;
     try {
-      await httpClient.get(
+      hospitalRes = await httpClient.get(
         `${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`,
         { headers: { Authorization: req.headers.authorization } }
       );
@@ -93,6 +97,8 @@ export const Registeration: any = asyncHandler(
     // ==============================
     const newbooking = await Booking.create({
       patient_dob,
+      patient_age,
+      patient_gender,
       patient_name,
       patient_place,
       patient_phone,
@@ -101,9 +107,9 @@ export const Registeration: any = asyncHandler(
       doctorId,
       booking_date,
       doctor_name: displayName,
-    doctor_department: department,
+      doctor_department: department,
       consulting_time,
-      status
+      booking_status: booking_status || "user booking",
     });
 
     // ==============================
@@ -111,16 +117,17 @@ export const Registeration: any = asyncHandler(
     // ==============================
 
     const doctorName =
-      doctor?.data?.displayName; 
-      
+      doctor?.data?.displayName || "Unknown Doctor"; 
+    const hospitalName =
+      hospitalRes?.data?.data?.name || `Hospital (ID: ${hospitalId})`;
 
     await Promise.allSettled([
       // Notification Service
       httpClient.post(
         `${process.env.NOTIFICATION_SERVICE_URL}/notification`,
         {
-          hospitalId,
-          doctorId,
+          hospitalIds: hospitalId ? [Number(hospitalId)] : [],
+          doctorIds: doctorId ? [Number(doctorId)] : [],
           message: `New booking for Dr. ${doctorName} on ${booking_date}`,
         },
         { headers: { Authorization: req.headers.authorization} }
@@ -143,8 +150,52 @@ export const Registeration: any = asyncHandler(
     // ==============================
     await publishEvent("booking_events", "BOOKING_REGISTERED", {
       bookingId: newbooking.id,
+      userId,
+      hospitalId,
+      doctorId,
+      patient_name,
+      doctorName,
+      hospitalName,
+      booking_date,
     });
 
+    
+
+
+    try {
+      // TOKENS
+      const hospitalToken = hospitalRes?.data?.data?.fcmToken;
+      const doctorToken = doctor?.data?.fcmToken;
+      // USER TOKEN
+      let userToken;
+      if (userId) {
+        const userRes = await httpClient.get(
+          `${process.env.USER_SERVICE_URL}/users/${userId}`,
+          {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }
+        );
+        userToken = userRes?.data?.data?.fcmToken;
+      }
+
+      await sendBookingPushNotifications({
+        hospitalToken,
+        doctorToken,
+        userToken,
+        patient_name,
+        doctorName,
+        booking_date,
+        type: "BOOKING_REGISTERED",
+      });
+
+    } catch (error: any) {
+      console.error(
+        "Push notification failed:",
+        error.message
+      );
+    }
     // ==============================
     // 9. RESPONSE
     // ==============================
@@ -184,76 +235,130 @@ export const getanBooking: any = asyncHandler(
 // UPDATE - PUT /booking/:id
 export const updateData: any = asyncHandler(
   async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const updatePayload = req.body;
-    
+    try {
+      const { id } = req.params;
+      const updatePayload = req.body;
+      
 
-    const booking = await Booking.update(updatePayload, {
-      where: { id: id },
-      returning: true,
-    });
-
-    if (!booking[1] || booking[1].length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "booking not found",
-        status: 200,
-        data: null,
-        error: { code: "BOOKING_NOT_FOUND", details: null },
+      const booking = await Booking.update(updatePayload, {
+        where: { id: id },
+        returning: true,
       });
-      return;
+
+      if (!booking[1] || booking[1].length === 0) {
+        res.status(404).json({
+          success: false,
+          message: "booking not found",
+          status: 404,
+          data: null,
+          error: { code: "BOOKING_NOT_FOUND", details: `No booking exists with ID ${id}` },
+        });
+        return;
+      }
+
+      // ✅ Get updated booking object
+      const updatedBooking = booking[1][0];
+
+
+
+
+      let eventName: "BOOKING_UPDATED" | "BOOKING_CANCELLED" | "BOOKING_ACCEPTED" | "BOOKING_COMPLETED" = "BOOKING_UPDATED";
+
+      if (updatedBooking.status === "cancel") {
+        eventName = "BOOKING_CANCELLED";
+      } else if (updatedBooking.status === "accepted") {
+        eventName = "BOOKING_ACCEPTED";
+      } else if (updatedBooking.status === "completed") {
+        eventName = "BOOKING_COMPLETED";
+      }
+      
+
+
+      
+      const eventPayload = {
+        bookingId: updatedBooking.id,
+        userId: updatedBooking.userId,
+        hospitalId: updatedBooking.hospitalId,
+        doctorId: updatedBooking.doctorId,
+        patient_name: updatedBooking.patient_name,
+        status: updatedBooking.status
+      };
+
+      console.log(`📤 Publishing ${eventName} event with payload:`, JSON.stringify(eventPayload, null, 2));
+      
+      await publishEvent("booking_events", eventName, eventPayload);
+
+      if (updatedBooking.status !== "cancel") {
+        try {
+          // ✅ Use correct values
+          await axios.post(
+            `${process.env.BULMQ_SERVICE_URL}/booking-task/users`,
+            {
+              patient_phone: updatedBooking?.patient_phone,
+              doctorId: updatedBooking?.doctorId,
+              status: updatedBooking?.status,
+              consulting_time: updatedBooking?.consulting_time,
+              message: `Booking ${updatedBooking?.status}`,
+            },
+             {
+              headers: { Authorization: req.headers.authorization },
+            },
+          );
+        } catch (bulmqError: any) {
+          console.error("⚠️ Failed to trigger BullMQ reminder service:", bulmqError.message);
+        }
+
+        let doctor: any;
+        try {
+          const doctorRes = await httpClient.get(
+            `${process.env.DOCTOR_SERVICE_URL}/doctor/${updatedBooking.doctorId}`,
+            {
+              headers: { Authorization: req.headers.authorization },
+            },
+          );
+          doctor = doctorRes.data;
+        } catch (doctorError: any) {
+          console.error("⚠️ Failed to fetch doctor details for notification:", doctorError.message);
+        }
+
+        if (doctor) {
+          try {
+            // send notification userId
+            await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/notification`, {
+                userIds: updatedBooking.userId ? [Number(updatedBooking.userId)] : [],
+                message: `Your booking with Dr. ${doctor.data.displayName} has been ${updatedBooking.status}.`,
+              },
+              {
+                headers: { Authorization: req.headers.authorization }
+              }
+            );
+          } catch (notifError: any) {
+            console.error("⚠️ Failed to send user status update notification:", notifError.message);
+          }
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "successfully updated",
+        status: 200,
+        data: updatedBooking,
+        error: null,
+      });
+
+    } catch (error: any) {
+      console.error("🔥 Error in booking update controller:", error);
+      res.status(error.response?.status || 500).json({
+        success: false,
+        message: error.message || "An unexpected error occurred during update",
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          code: "UPDATE_ERROR",
+          details: error.response?.data || error.stack || null,
+        },
+      });
     }
-
-    // ✅ Get updated booking object
-    const updatedBooking = booking[1][0];
-
-    await publishEvent("booking_events", "BOOKING_UPDATED", {
-      bookingId: updatedBooking.id,
-    });
-
-    // if (updatedBooking.status !== "cancel") {
-    //   // ✅ Use correct values
-    //   await axios.post(
-    //     `${process.env.BULMQ_SERVICE_URL}/booking-task/users`,
-    //     {
-    //       patient_phone: updatedBooking?.patient_phone,
-    //       doctorId: updatedBooking?.doctorId,
-    //       status: updatedBooking?.status,
-    //       consulting_time: updatedBooking?.consulting_time,
-    //       message: `Booking ${updatedBooking?.status}`,
-    //     },
-    //      {
-    //       headers: { Authorization: req.headers.authorization },
-    //     },
-    //   );
-
-      // const doctor: any = await httpClient.get(
-      //   `${process.env.DOCTOR_SERVICE_URL}/doctor/${updatedBooking.doctorId}`,
-      //   {
-      //     headers: { Authorization: req.headers.authorization },
-      //   },
-      // );
-
-      // send notification userId
-
-   // await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}/notification`, {
-   //      userId: updatedBooking.userId,
-   //      message: `Your booking with Dr. ${doctor.data.displayName} has been ${updatedBooking.status}.`,
-   //    },
-   //    {
-   //      headers: { Authorization: req.headers.authorization }
-   //    }
-   //  );
-
-   //  }
-
-
-    res.status(200).json({
-      success: true,
-      message: "successfully updated",
-      data: updatedBooking,
-      error: null,
-    });
   },
 );
 
@@ -413,4 +518,3 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
   });
   return ;
 });
-
