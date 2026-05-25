@@ -8,79 +8,121 @@ import { Op } from "sequelize";
 dotevn.config();
 
 
-
-
-// Helper: validate userId exists in user-service (forward the token so auth passes)
-const validateUser = async (userId: number, authHeader: string): Promise<boolean> => {
-  try {
-    const res = await axios.get(`${process.env.USER_SERVICE_URL}/users/${userId}`, {
-      timeout: 5000,
-      headers: { Authorization: authHeader },
-    });
-    return res.status === 200 && res.data?.success === true;
-  } catch {
-    return false;
-  }
-};
-
 // REGISTER - POST /medicinremainder/register
-export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
-  const { medicineName, dosage, days, timeSlots, startDate, endDate } = req.body;
-  const userId = req.user.id;
-  const authHeader = req.headers.authorization;
 
-  // Validate that the userId exists in the user-service
-  const userExists = await validateUser(userId, authHeader);
-  if (!userExists) {
-    res.status(404).json({
-      success: false,
-      message: `User with ID ${userId} does not exist`,
-      data: null,
-      error: { code: "USER_NOT_FOUND" },
-    });
-    return;
-  }
+export const Registeration: any = asyncHandler(
+  async (req: any, res: any) => {
+    const {
+      medicineName,
+      dosage,
+      days,
+      timeSlots,
+      startDate,
+      endDate,
+      userId: bodyUserId,
+    } = req.body;
 
-  const newMedicinremainder = await Medicinremainder.create({
-    userId,
-    medicineName,
-    dosage,
-    days,
-    timeSlots,
-    startDate,
-    endDate,
-  });
+    // =========================
+    // SAFE USER ID HANDLING
+    // =========================
+    const userId = req.user?.id || bodyUserId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User ID missing (unauthorized request)",
+      });
+    }
 
 
-  
-
-  await publishEvent("medicinremainder_events", "MEDICINREMAINDER_REGISTERED", {
-    MedicinremainderId: newMedicinremainder.id,
-    userId: newMedicinremainder.userId,
-  });
-
-
-    await axios.post(`${process.env.BULMQ_SERVICE_URL}/medicin-task`, {
-   userId, medicineName, dosage, days, timeSlots, startDate, endDate, 
-    message: "This time your medicing time"
-   },
-     {
+    try {
+      await axios.get(
+        `${process.env.USER_SERVICE_URL}/users/${userId}`,
+        {
+          timeout: 5000,
           headers: {
             Authorization: req.headers.authorization,
           },
         }
-  
-  )
+      );
+    } catch (error: any) {
+      console.error(
+        "User service error:",
+        error?.message || error
+      );
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "User service unavailable or user does not exist",
+      });
+    }
 
 
+    const newMedicinremainder =
+      await Medicinremainder.create({
+        userId,
+        medicineName,
+        dosage,
+        days,
+        timeSlots,
+        startDate,
+        endDate,
+      });
 
-  res.status(201).json({
-    success: true,
-    message: "Medicine reminder registered successfully",
-    data: newMedicinremainder,
-    error: null,
-  });
-});
+    // =========================
+    // EVENT PUBLISH (NON-BLOCKING SAFE)
+    // =========================
+    try {
+      await publishEvent(
+        "medicinremainder_events",
+        "MEDICINREMAINDER_REGISTERED",
+        {
+          MedicinremainderId: newMedicinremainder.id,
+          userId: newMedicinremainder.userId,
+        }
+      );
+    } catch (err) {
+      console.error("Event publish failed:", err);
+    }
+
+
+    try {
+      await axios.post(
+        `${process.env.BULMQ_SERVICE_URL}/medicin-task`,
+        {
+          userId,
+          medicineName,
+          dosage,
+          days,
+          timeSlots,
+          startDate,
+          endDate,
+          message: "This is your medicine reminder time",
+        },
+        {
+          timeout: 5000,
+          headers: {
+            Authorization: req.headers.authorization,
+          },
+        }
+      );
+    } catch (err) {
+      console.error(
+        "BULMQ service failed:",
+        err?.message || err
+      );
+    }
+
+    return res.status(201).json({
+      success: true,
+      message:
+        "Medicine reminder registered successfully",
+      data: newMedicinremainder,
+      error: null,
+    });
+  }
+);
 
 
 // GET ONE - GET /medicinremainder/:id
