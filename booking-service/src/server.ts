@@ -12,6 +12,9 @@ const startServer = async () => {
     await connectDB();
     await connectRabbitMQ();
 
+       const { default: Booking } = await import("./models/booking.model");
+        await Booking.sync({ alter: true });
+
     // Starting Booking Service
     const server = app.listen(PORT, () => {
       logger.info(`🚀 Booking Service is running on port ${PORT}`);
