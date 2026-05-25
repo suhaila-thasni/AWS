@@ -1,3 +1,7 @@
+
+
+
+
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -63,11 +67,15 @@ export const sendDoctorOtpEmail = async (email: string, otp: string, doctorName:
 };
 
 // REGISTER - POST /doctor/register
-
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   const { hospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
-  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting, experience, appointmentCount, regNo  } = req.body;
+  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting ,experience, appointmentCount, regNo} = req.body;
+ 
 
+  if (!hospitalId) {
+    res.status(400).json({ success: false, message: "Hospital ID is required" });
+    return;
+  }
 
   // 2. Validate hospitalId via hospital-service
   try {
@@ -79,8 +87,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
       return;
     }
   } catch (error) {
-    res.status(404).json({ 
-      success: false, 
+    res.status(404).json({
+      success: false,
       message: `Hospital with ID ${hospitalId} does not exist in the hospital service.`,
       error: { code: "HOSPITAL_NOT_FOUND" }
     });
@@ -120,13 +128,16 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
    joiningDate,
    outDoorConsulting,
    hospitalId,
-    experience,
-    appointmentCount, regNo 
+   experience,
+    appointmentCount,
+     regNo
   });
 
   await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
     doctorId: newDoctor.id,
+    doctorName: newDoctor.displayName,
     phone: newDoctor.phone,
+    hospitalId: newDoctor.hospitalId
   });
 
   res.status(201).json({
@@ -136,7 +147,6 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     error: null,
   });
 });
-
 
 // LOGIN - POST /doctor/login
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
@@ -153,6 +163,7 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
   // Find doctor by email OR phone
   const doctor = await Doctor.scope("withPassword").findOne({
     where: {
+      isDelete: false,
       [Op.or]: [
         email ? { email } : null,
         phone ? { phone } : null,
@@ -211,7 +222,7 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
 export const loginWithPhone: any = asyncHandler(async (req: Request, res: Response) => {
   const { phone } = req.body;
   const numericPhone = phone.replace(/\D/g, "").slice(-10);
-  const doctor = await Doctor.findOne({ where: { phone: numericPhone } });
+  const doctor = await Doctor.findOne({ where: { phone: numericPhone, isDelete: false } });
   if (!doctor) {
     res.status(404).json({
       success: false,
@@ -246,6 +257,7 @@ export const loginWithPhone: any = asyncHandler(async (req: Request, res: Respon
   res.status(200).json({
     success: true,
     message: "OTP sent successfully",
+    otp,
     data: process.env.NODE_ENV === "development" ? { otp } : null,
   });
 });
@@ -291,7 +303,7 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
 
 // GET ONE - GET /doctor/:id
 export const getanDoctor: any = asyncHandler(async (req: Request, res: Response) => {
-  const doctor = await Doctor.findByPk(req.params.id);
+  const doctor = await Doctor.findOne({ where: { id: req.params.id, isDelete: false } });
   if (!doctor) {
     res.status(404).json({
       success: false,
@@ -316,7 +328,7 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   const updatePayload = req.body;
 
   const doctor = await Doctor.update(updatePayload, {
-    where: { id: id },
+    where: { id: id, isDelete: false },
     returning: true,
     individualHooks: true, // 🔥 Ensure password hashing hooks are triggered
   });
@@ -348,7 +360,7 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
 export const doctorDelete: any = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const doctor = await Doctor.findByPk(id);
+  const doctor = await Doctor.findOne({ where: { id, isDelete: false } });
   if (!doctor) {
     res.status(404).json({
       success: false,
@@ -359,8 +371,12 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
     return;
   }
 
-  // 🔥 Perform Soft Delete (requires paranoid: true in model)
-  await doctor.destroy();
+  // 🔥 Move to blacklist (soft delete)
+  await doctor.update({
+    isActive: false,
+    isDelete: true,
+    deleteDate: new Date(),
+  });
 
   await publishEvent("doctor_events", "DOCTOR_DELETED", {
     doctorId: id,
@@ -368,7 +384,7 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 
   res.status(200).json({
     success: true,
-    message: "Doctor account soft-deleted successfully",
+    message: "Doctor account moved to blacklist.",
     status: 200,
     data: null,
     error: null,
@@ -376,8 +392,7 @@ export const doctorDelete: any = asyncHandler(async (req: Request, res: Response
 });
 
 
-// GET ALL - GET /doctors
-
+// GET ALL - GET /doctor
 export const getDoctors = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
 
@@ -392,7 +407,7 @@ export const getDoctors = asyncHandler(
       search_query,
       page = 1,
       limit = 10,
-    }: any = req.query;
+    } = req.query;
 
     hospitalId = normalizeQuery(hospitalId);
     speciality = normalizeQuery(speciality);
@@ -401,69 +416,92 @@ export const getDoctors = asyncHandler(
     search_query = normalizeQuery(search_query);
 
     const whereClause: any = {};
+    const andConditions: any[] = [];
+
+    /* ------------------------------ PAGINATION ----------------------------- */
 
     const pageNum = Math.max(Number(page) || 1, 1);
-    const limitNum = Math.max(Number(limit) || 10, 1);
 
-    // Hospital filter
+    // max 100 limit protection
+    const limitNum = Math.min(
+      Math.max(Number(limit) || 10, 1),
+      100
+    );
+
+    /* ---------------------------- FILTERS -------------------------------- */
+
     if (hospitalId) {
-      whereClause.hospitalId = Number(hospitalId);
+      andConditions.push({
+        hospitalId: Number(hospitalId),
+      });
     }
 
-    // Status filter
     if (status !== undefined) {
-      whereClause.isActive = status === "true";
+      andConditions.push({
+        isActive: status === "true",
+      });
     }
 
-    // Name filter
     if (name) {
-      whereClause.displayName = {
-        [Op.iLike]: `%${name}%`,
-      };
+      andConditions.push({
+        displayName: {
+          [Op.iLike]: `%${name}%`,
+        },
+      });
     }
 
-    // Speciality filter
     if (speciality) {
-      whereClause.department = {
-        [Op.iLike]: `%${speciality}%`,
-      };
+      andConditions.push({
+        department: {
+          [Op.iLike]: `%${speciality}%`,
+        },
+      });
     }
 
-    // Search query
+    /* -------------------------- SEARCH QUERY ------------------------------ */
+
     if (search_query) {
-      whereClause[Op.or] = [
-        {
-          displayName: {
-            [Op.iLike]: `%${search_query}%`,
+      andConditions.push({
+        [Op.or]: [
+          {
+            displayName: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-        {
-          email: {
-            [Op.iLike]: `%${search_query}%`,
+          {
+            email: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-        {
-          phone: {
-            [Op.iLike]: `%${search_query}%`,
+          {
+            phone: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-        {
-          designation: {
-            [Op.iLike]: `%${search_query}%`,
+          {
+            designation: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-        {
-          department: {
-            [Op.iLike]: `%${search_query}%`,
+          {
+            department: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-        {
-          gender: {
-            [Op.iLike]: `%${search_query}%`,
+          {
+            gender: {
+              [Op.iLike]: `%${search_query}%`,
+            },
           },
-        },
-      ];
+        ],
+      });
     }
+
+    if (andConditions.length > 0) {
+      whereClause[Op.and] = andConditions;
+    }
+
+    /* ----------------------------- QUERY -------------------------------- */
 
     const doctors = await Doctor.findAndCountAll({
       where: whereClause,
@@ -472,9 +510,14 @@ export const getDoctors = asyncHandler(
       order: [["createdAt", "DESC"]],
     });
 
-    const totalPages = Math.ceil(doctors.count / limitNum);
+    /* --------------------------- PAGINATION ------------------------------- */
 
-    res.status(200).json({
+    const totalPages =
+      Math.ceil(doctors.count / limitNum) || 1;
+
+    /* ----------------------------- RESPONSE ------------------------------- */
+
+     res.status(200).json({
       success: true,
       data: doctors.rows,
       pagination: {
@@ -487,15 +530,41 @@ export const getDoctors = asyncHandler(
       },
       error: null,
     });
+    return;
   }
 );
 
+
+
+// GET BLACKLISTED - GET /doctor/blacklist
+export const getBlacklistedDoctors: any = asyncHandler(async (req: Request, res: Response) => {
+  const doctor = await Doctor.findAll({
+    where: { isDelete: true }
+  });
+
+  if (doctor.length === 0) {
+    res.status(404).json({
+      success: false,
+      message: "No blacklisted doctors found",
+      data: null,
+      error: { code: "NO_DATA_FOUND", details: null },
+    });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    status: "Success",
+    data: doctor,
+    error: null,
+  });
+});
 
 // CHANGE PASSWORD - PUT /doctor/password
 export const changepassword: any = asyncHandler(async (req: Request, res: Response) => {
   const { currentPassword, newPassword, email } = req.body;
 
-  const doctor = await Doctor.scope("withPassword").findOne({ where: { email } });
+  const doctor = await Doctor.scope("withPassword").findOne({ where: { email, isDelete: false } });
   if (!doctor) {
     res.status(404).json({
       success: false,
@@ -533,7 +602,7 @@ export const sendDoctorOtp: any = asyncHandler(async (req: Request, res: Respons
     return;
   }
 
-  const doctor = await Doctor.findOne({ where: { email } });
+  const doctor = await Doctor.findOne({ where: { email, isDelete: false } });
   if (!doctor) {
     res.status(404).json({ success: false, message: "Doctor not found with this email" });
     return;
@@ -566,9 +635,9 @@ export const verifyDoctorOtp: any = asyncHandler(async (req: Request, res: Respo
   let doctor;
   if (phone) {
     let numericPhone = phone.replace(/\D/g, "").slice(-10);
-    doctor = await Doctor.scope("withPassword").findOne({ where: { phone: numericPhone } });
+    doctor = await Doctor.scope("withPassword").findOne({ where: { phone: numericPhone, isDelete: false } });
   } else if (email) {
-    doctor = await Doctor.scope("withPassword").findOne({ where: { email } });
+    doctor = await Doctor.scope("withPassword").findOne({ where: { email, isDelete: false } });
   }
 
   if (!doctor || doctor.otp !== otp.toString()) {
@@ -604,13 +673,13 @@ export const verifyDoctorOtp: any = asyncHandler(async (req: Request, res: Respo
 });
 
 // RESET DOCTOR PASSWORD - POST /doctor/auth/reset-password
-export const resetDoctorPassword: any = asyncHandler(async (req: Request, res: Response) => {
-  const { email, otp, newPassword } = req.body;
+export const resetDoctorPassword: any = asyncHandler(async (req: any, res: Response) => {
+  const { newPassword } = req.body;
 
-  const doctor = await Doctor.scope("withPassword").findOne({ where: { email } });
+  const doctor = await Doctor.scope("withPassword").findOne({ where: { id: req.user.id, isDelete: false } });
 
-  if (!doctor || doctor.otp !== otp.toString() || (doctor.otpExpiry && new Date() > doctor.otpExpiry)) {
-    res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+  if (!doctor) {
+    res.status(404).json({ success: false, message: "Doctor not found" });
     return;
   }
 
@@ -620,6 +689,13 @@ export const resetDoctorPassword: any = asyncHandler(async (req: Request, res: R
 
   await doctor.save();
 
+  // Notify hospital about password reset
+  await publishEvent("doctor_events", "DOCTOR_PASSWORD_RESET", {
+    doctorId: doctor.id,
+    doctorName: doctor.displayName,
+    hospitalId: doctor.hospitalId
+  });
+
   res.json({ success: true, message: "Password reset successful" });
 });
 
@@ -627,7 +703,7 @@ export const resetDoctorPassword: any = asyncHandler(async (req: Request, res: R
 export const changeDoctorPassword: any = asyncHandler(async (req: any, res: Response) => {
   const { currentPassword, newPassword } = req.body;
 
-  const doctor = await Doctor.scope("withPassword").findByPk(req.user.id);
+  const doctor = await Doctor.scope("withPassword").findOne({ where: { id: req.user.id, isDelete: false } });
   if (!doctor) {
     res.status(404).json({ success: false, message: "Doctor not found" });
     return;
@@ -641,6 +717,13 @@ export const changeDoctorPassword: any = asyncHandler(async (req: any, res: Resp
 
   doctor.password = newPassword;
   await doctor.save();
+
+  // Notify hospital about password change
+  await publishEvent("doctor_events", "DOCTOR_PASSWORD_CHANGED", {
+    doctorId: doctor.id,
+    doctorName: doctor.displayName,
+    hospitalId: doctor.hospitalId
+  });
 
   res.json({ success: true, message: "Password changed successfully" });
 });
