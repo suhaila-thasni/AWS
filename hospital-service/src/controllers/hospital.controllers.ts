@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
 import Hospital from "../models/hospital.model";
 import { publishEvent } from "../events/publisher";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import twilio from "twilio";
 import { logger } from "../utils/logger";
 import { sendEmail } from "../services/mail.service";
