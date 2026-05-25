@@ -5,6 +5,7 @@ import { publishEvent } from "../events/publisher";
 import { httpClient } from "../utils/httpClient";
 import axios from "axios";
 import dotenv from "dotenv";
+import { Op, Sequelize } from "sequelize";
 dotenv.config();
 
 // REGISTER - POST /boooking/register
