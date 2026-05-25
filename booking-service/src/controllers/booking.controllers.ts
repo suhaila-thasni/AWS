@@ -404,6 +404,9 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
     doctor_name,
     patient_name,
     gender,
+    startDate,
+    endDate,
+    date,
     page = 1,
     limit = 10,
     search_query,
@@ -424,6 +427,9 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
   search_query = extract(search_query);
   patient_name = extract(patient_name);
   gender = extract(gender);
+    startDate = extract(startDate);
+      endDate = extract(endDate);
+        date = extract(date);
 
   const pageNum = Number(page);
   const limitNum = Number(limit);
@@ -478,38 +484,56 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
     };
   }
 
+  if (startDate || endDate || date) {
+  const startDates = new Date(startDate || date);
+  startDates.setHours(0, 0, 0, 0);
+
+  const endDates = new Date(endDate);
+  endDate.setHours(23, 59, 59, 999);
+
+  whereClause.booking_date = {
+    [Op.between]: [startDates, endDates],
+  };
+}
+
 
   // Global search
- if (search_query) {
+ if (search_query?.trim()) {
+  const search = search_query.trim();
+
   whereClause[Op.or] = [
     Sequelize.where(
       Sequelize.fn("COALESCE", Sequelize.col("doctor_name"), ""),
       {
-        [Op.iLike]: `%${search_query}%`,
+        [Op.iLike]: `%${search}%`,
       }
     ),
+
     Sequelize.where(
       Sequelize.fn("COALESCE", Sequelize.col("doctor_department"), ""),
       {
-        [Op.iLike]: `%${search_query}%`,
+        [Op.iLike]: `%${search}%`,
       }
     ),
+
     Sequelize.where(
       Sequelize.fn("COALESCE", Sequelize.col("patient_phone"), ""),
       {
-        [Op.iLike]: `%${search_query}%`,
+        [Op.iLike]: `%${search}%`,
       }
     ),
+
     Sequelize.where(
-      Sequelize.fn("COALESCE", Sequelize.col("patient_gender"), ""),
+      Sequelize.cast(Sequelize.col("patient_gender"), "TEXT"),
       {
-        [Op.iLike]: `%${search_query}%`,
+        [Op.iLike]: `%${search}%`,
       }
     ),
+
     Sequelize.where(
       Sequelize.fn("COALESCE", Sequelize.col("patient_name"), ""),
       {
-        [Op.iLike]: `%${search_query}%`,
+        [Op.iLike]: `%${search}%`,
       }
     ),
   ];
