@@ -3,14 +3,17 @@ import asyncHandler from "express-async-handler";
 import Medicinremainder from "../models/medicinremainder.model";
 import { publishEvent } from "../events/publisher";
 import axios from "axios";
+import dotevn from "dotenv";
+import { Op } from "sequelize";
+dotevn.config();
 
 
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || "http://user-service:3002";
+
 
 // Helper: validate userId exists in user-service (forward the token so auth passes)
 const validateUser = async (userId: number, authHeader: string): Promise<boolean> => {
   try {
-    const res = await axios.get(`${USER_SERVICE_URL}/users/${userId}`, {
+    const res = await axios.get(`${process.env.USER_SERVICE_URL}/users/${userId}`, {
       timeout: 5000,
       headers: { Authorization: authHeader },
     });
@@ -24,7 +27,7 @@ const validateUser = async (userId: number, authHeader: string): Promise<boolean
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   const { medicineName, dosage, days, timeSlots, startDate, endDate } = req.body;
   const userId = req.user.id;
-  const authHeader = req.headers.authorization || "";
+  const authHeader = req.headers.authorization;
 
   // Validate that the userId exists in the user-service
   const userExists = await validateUser(userId, authHeader);
@@ -57,10 +60,17 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
   });
 
 
-    await axios.post('http://localhost:3008/medicin-task', {
+    await axios.post(`${process.env.BULMQ_SERVICE_URL}/medicin-task`, {
    userId, medicineName, dosage, days, timeSlots, startDate, endDate, 
     message: "This time your medicing time"
-   })
+   },
+     {
+          headers: {
+            Authorization: req.headers.authorization,
+          },
+        }
+  
+  )
 
 
 
@@ -217,16 +227,3 @@ export const getMedicinremainder = asyncHandler(async (req: Request, res: Respon
   });
    return ;
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
