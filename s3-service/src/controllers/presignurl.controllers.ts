@@ -1,104 +1,201 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 import dotenv from "dotenv";
-import { S3 } from "../lib/S3Client";
 import axios from "axios";
+
+import { S3 } from "../lib/S3Client";
+
 dotenv.config();
 
-export const createPresignurl: any = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+/* -------------------------------------------------------------------------- */
+/*                                  CONSTANTS                                 */
+/* -------------------------------------------------------------------------- */
+
+const VALID_ROLES = ["hospital", "user", "doctor", "staff", "ad"] as const;
+
+const SERVICE_CONFIG: Record<
+  string,
+  {
+    baseUrl: string | undefined;
+    endpoint: string;
+  }
+> = {
+  hospital: {
+    baseUrl: process.env.HOSPITAL_SERVICE_URL,
+    endpoint: "hospital",
+  },
+  user: {
+    baseUrl: process.env.USER_SERVICE_URL,
+    endpoint: "users",
+  },
+  doctor: {
+    baseUrl: process.env.DOCTOR_SERVICE_URL,
+    endpoint: "doctor",
+  },
+  staff: {
+    baseUrl: process.env.STAFF_SERVICE_URL,
+    endpoint: "staff",
+  },
+  ad: {
+    baseUrl: process.env.AD_SERVICE_URL,
+    endpoint: "ad",
+  },
+};
+
+/* -------------------------------------------------------------------------- */
+/*                               HELPER FUNCTION                              */
+/* -------------------------------------------------------------------------- */
+
+const updateImageUrl = async (
+  role: string,
+  id: string | number,
+  imageUrl: string | null,
+  authorization?: string
+) => {
+  const service = SERVICE_CONFIG[role];
+
+  if (!service || !service.baseUrl) {
+    throw new Error("Invalid role or missing service URL");
+  }
+
+  const url = `${service.baseUrl}/${service.endpoint}/${id}`;
+
+  await axios.put(
+    url,
+    { imageUrl },
+    {
+      headers: {
+        Authorization: authorization || "",
+      },
+    }
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            CREATE PRESIGNED URL                            */
+/* -------------------------------------------------------------------------- */
+
+export const createPresignurl = asyncHandler(
+  async (req: Request, res: Response) : Promise<void> => {
     try {
       const { filename, contentType, size, role, id } = req.body;
-      
-      if (!filename || !contentType || !size) {
-        res.status(400).json({ error: "Invalid request body" });
+
+      /* ------------------------------ VALIDATION ----------------------------- */
+
+      if (!filename || !contentType || !size || !role || !id) {
+         res.status(400).json({
+          success: false,
+          message:
+            "filename, contentType, size, role and id are required",
+        });
+        return;
       }
 
-      const uniqueKey = `${uuidv4()}-${filename}`;
+      if (!VALID_ROLES.includes(role)) {
+         res.status(400).json({
+          success: false,
+          message: "Invalid role",
+        });
+      }
+
+      /* ----------------------------- GENERATE KEY ---------------------------- */
+
+      const uniqueKey = `${uuidv4()}-${filename.replace(/\s/g, "-")}`;
+
+      /* ------------------------------- S3 COMMAND ---------------------------- */
 
       const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
         Key: uniqueKey,
         ContentType: contentType,
-        ContentLength: size,
+        ContentLength: Number(size),
       });
+
+      /* --------------------------- PRESIGNED URL ----------------------------- */
 
       const presignedUrl = await getSignedUrl(S3, command, {
         expiresIn: 360,
       });
 
-      if (role == "hospital") {
-        await axios.put(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: uniqueKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
+      /* --------------------------- UPDATE SERVICE ---------------------------- */
 
-      if (role == "user") {
-        
-        await axios.put(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: uniqueKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
+      await updateImageUrl(
+        role,
+        id,
+        uniqueKey,
+        req.headers.authorization
+      );
 
-      if (role == "doctor") {
-        await axios.put(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: uniqueKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
+      /* ------------------------------- RESPONSE ------------------------------ */
 
-      if (role == "staff") {
-        await axios.put(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: uniqueKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "ad") {
-        await axios.put(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: uniqueKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-      
-
-      res.json({
+     res.status(200).json({
+        success: true,
         presignedUrl,
         key: uniqueKey,
       });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to generate upload URL" });
-    }
-  },
-);
+    } catch (err: any) {
+      console.error("createPresignurl Error:", err);
 
-export const editAPresignurl: any = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      // ✅ Express way
-      const { filename, contentType, key, role, id } = req.body;
-      
-
-      if (!filename || !contentType) {
-        res.status(400).json({
-          error: "Missing filename or contentType",
+      if (err.response) {
+         res.status(err.response.status).json({
+          success: false,
+          message:
+            err.response.data?.message ||
+            "Microservice request failed",
+          error: err.response.data,
         });
+        return;
       }
 
-      // reuse key OR create new
-      const objectKey = key || `${Date.now()}-${filename.replace(/\s/g, "-")}`;
+       res.status(500).json({
+        success: false,
+        message: "Failed to generate upload URL",
+      });
+      return;
+    }
+  }
+);
+
+/* -------------------------------------------------------------------------- */
+/*                             EDIT PRESIGNED URL                             */
+/* -------------------------------------------------------------------------- */
+
+export const editAPresignurl = asyncHandler(
+  async (req: Request, res: Response) : Promise<void> => {
+    try {
+      const { filename, contentType, key, role, id } = req.body;
+
+      /* ------------------------------ VALIDATION ----------------------------- */
+
+      if (!filename || !contentType || !role || !id) {
+         res.status(400).json({
+          success: false,
+          message:
+            "filename, contentType, role and id are required",
+        });
+        return;
+      }
+
+      if (!VALID_ROLES.includes(role)) {
+         res.status(400).json({
+          success: false,
+          message: "Invalid role",
+        });
+        return;
+      }
+
+      /* ------------------------------- OBJECT KEY ---------------------------- */
+
+      const objectKey =
+        key || `${Date.now()}-${filename.replace(/\s/g, "-")}`;
+
+      /* ------------------------------- S3 COMMAND ---------------------------- */
 
       const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
@@ -106,81 +203,88 @@ export const editAPresignurl: any = asyncHandler(
         ContentType: contentType,
       });
 
-      
+      /* --------------------------- PRESIGNED URL ----------------------------- */
 
       const presignedUrl = await getSignedUrl(S3, command, {
         expiresIn: 60 * 5,
       });
 
+      /* --------------------------- UPDATE SERVICE ---------------------------- */
 
+      await updateImageUrl(
+        role,
+        id,
+        objectKey,
+        req.headers.authorization
+      );
 
-      if (role == "hospital") {
-        await axios.put(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: objectKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
+      /* ------------------------------- RESPONSE ------------------------------ */
 
-      if (role == "user") {
-        await axios.put(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: objectKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "doctor") {
-        await axios.put(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: objectKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "staff") {
-        await axios.put(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: objectKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      
-
-      if (role == "ad") {
-        await axios.put(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: objectKey }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      res.json({
+       res.status(200).json({
+        success: true,
         presignedUrl,
         key: objectKey,
       });
-    } catch (err) {
-      console.error(err);
+      return;
+    } catch (err: any) {
+      console.error("editAPresignurl Error:", err);
 
-      res.status(500).json({
-        error: "Failed to create edit URL",
+      if (err.response) {
+         res.status(err.response.status).json({
+          success: false,
+          message:
+            err.response.data?.message ||
+            "Microservice request failed",
+          error: err.response.data,
+        });
+        return;
+      }
+
+       res.status(500).json({
+        success: false,
+        message: "Failed to create edit URL",
       });
+      return;
     }
-  },
+  }
 );
 
-export const deleteAPresignurl: any = asyncHandler(
+/* -------------------------------------------------------------------------- */
+/*                           DELETE PRESIGNED URL                             */
+/* -------------------------------------------------------------------------- */
+
+export const deleteAPresignurl = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // ✅ Express way
       const { key, role, id } = req.body;
 
+      /* ------------------------------ VALIDATION ----------------------------- */
+
       if (!key || typeof key !== "string") {
-        res.status(400).json({
-          error: "Missing or invalid object key.",
+         res.status(400).json({
+          success: false,
+          message: "Missing or invalid object key",
         });
+        return;
       }
+
+      if (!role || !id) {
+        res.status(400).json({
+          success: false,
+          message: "role and id are required",
+        });
+        return;
+      }
+
+      if (!VALID_ROLES.includes(role)) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid role",
+        });
+        return;
+      }
+
+      /* ------------------------------- DELETE S3 ----------------------------- */
 
       const command = new DeleteObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
@@ -189,58 +293,41 @@ export const deleteAPresignurl: any = asyncHandler(
 
       await S3.send(command);
 
+      /* --------------------------- UPDATE SERVICE ---------------------------- */
 
+      await updateImageUrl(
+        role,
+        id,
+        null,
+        req.headers.authorization
+      );
 
-      if (role == "hospital") {
-        await axios.put(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${id}`, { imageUrl: null }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
+      /* ------------------------------- RESPONSE ------------------------------ */
 
-      if (role == "user") {
-        await axios.put(`${process.env.USER_SERVICE_URL}/users/${id}`, { imageUrl: null }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "doctor") {
-        await axios.put(`${process.env.DOCTOR_SERVICE_URL}/doctor/${id}`, { imageUrl: null }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "staff") {
-        await axios.put(`${process.env.STAFF_SERVICE_URL}/staff/${id}`, { imageUrl: null }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-      if (role == "ad") {
-        await axios.put(`${process.env.AD_SERVICE_URL}/ad/${id}`, { imageUrl: null }, {
-          headers: {
-            Authorization: req.headers.authorization,
-          },
-        });
-      }
-
-
-      res.status(200).json({
+       res.status(200).json({
+        success: true,
         message: "File deleted successfully",
       });
-    } catch (err) {
-      console.error(err);
+      return;
+    } catch (err: any) {
+      console.error("deleteAPresignurl Error:", err);
 
-      res.status(500).json({
-        error: "Failed to delete file.",
+      if (err.response) {
+         res.status(err.response.status).json({
+          success: false,
+          message:
+            err.response.data?.message ||
+            "Microservice request failed",
+          error: err.response.data,
+        });
+        return;
+      }
+
+       res.status(500).json({
+        success: false,
+        message: "Failed to delete file",
       });
+      return;
     }
-  },
+  }
 );
