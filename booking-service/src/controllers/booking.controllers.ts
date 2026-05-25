@@ -28,13 +28,8 @@ export const Registeration: any = asyncHandler(
       consulting_time,
       booking_status
     } = req.body;
-
-
-
-    console.log(req.body, "wer567890p");
     
 
-    
     
     const errors: string[] = [];
 
@@ -408,6 +403,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
     status,
     doctor_name,
     patient_name,
+    gender,
     page = 1,
     limit = 10,
     search_query,
@@ -427,6 +423,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
   limit = extract(limit);
   search_query = extract(search_query);
   patient_name = extract(patient_name);
+  gender = extract(gender);
 
   const pageNum = Number(page);
   const limitNum = Number(limit);
@@ -451,6 +448,13 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
       [Op.iLike]: `%${department}%`,
     };
   }
+
+   if (department) {
+    whereClause.patient_gender = {
+      [Op.iLike]: `%${gender}%`,
+    };
+  }
+
 
   if (phone) {
     whereClause.patient_phone = {
@@ -497,7 +501,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
       }
     ),
     Sequelize.where(
-      Sequelize.fn("COALESCE", Sequelize.col("gender"), ""),
+      Sequelize.fn("COALESCE", Sequelize.col("patient_gender"), ""),
       {
         [Op.iLike]: `%${search_query}%`,
       }
