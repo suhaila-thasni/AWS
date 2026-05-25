@@ -3,11 +3,10 @@ import asyncHandler from "express-async-handler";
 import Booking from "../models/booking.model";
 import { publishEvent } from "../events/publisher";
 import { httpClient } from "../utils/httpClient";
-// import { sendPushNotification } from "../events/pushnotification";
 import { sendBookingPushNotifications } from "../utils/sendBookingPush";
 import axios from "axios";
 import dotenv from "dotenv";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 dotenv.config();
 
 // REGISTER - POST /booking/register
@@ -29,6 +28,11 @@ export const Registeration: any = asyncHandler(
       consulting_time,
       booking_status
     } = req.body;
+
+
+
+    console.log(req.body, "wer567890p");
+    
 
     
     
@@ -443,7 +447,7 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
   }
 
   if (department) {
-    whereClause.department = {
+    whereClause.doctor_department = {
       [Op.iLike]: `%${department}%`,
     };
   }
@@ -472,18 +476,40 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) : Pr
 
 
   // Global search
-  if (search_query) {
-    whereClause[Op.or] = [
-      { doctor_name: { [Op.iLike]: `%${search_query}%` } },
-      { department: { [Op.iLike]: `%${search_query}%` } },
-      { patient_phone: { [Op.iLike]: `%${search_query}%` } },
-      { designation: { [Op.iLike]: `%${search_query}%` } },
-      { staffType: { [Op.iLike]: `%${search_query}%` } },
-      { gender: { [Op.iLike]: `%${search_query}%` } },
-      { staffId: { [Op.iLike]: `%${search_query}%` } },
-       { patient_name: { [Op.iLike]: `%${search_query}%` } },
-    ];
-  }
+ if (search_query) {
+  whereClause[Op.or] = [
+    Sequelize.where(
+      Sequelize.fn("COALESCE", Sequelize.col("doctor_name"), ""),
+      {
+        [Op.iLike]: `%${search_query}%`,
+      }
+    ),
+    Sequelize.where(
+      Sequelize.fn("COALESCE", Sequelize.col("doctor_department"), ""),
+      {
+        [Op.iLike]: `%${search_query}%`,
+      }
+    ),
+    Sequelize.where(
+      Sequelize.fn("COALESCE", Sequelize.col("patient_phone"), ""),
+      {
+        [Op.iLike]: `%${search_query}%`,
+      }
+    ),
+    Sequelize.where(
+      Sequelize.fn("COALESCE", Sequelize.col("gender"), ""),
+      {
+        [Op.iLike]: `%${search_query}%`,
+      }
+    ),
+    Sequelize.where(
+      Sequelize.fn("COALESCE", Sequelize.col("patient_name"), ""),
+      {
+        [Op.iLike]: `%${search_query}%`,
+      }
+    ),
+  ];
+}
 
   // IMPORTANT: pagination query
   const { count, rows } = await Booking.findAndCountAll({
