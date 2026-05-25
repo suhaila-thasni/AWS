@@ -4,7 +4,7 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.changeColumn(
-      'booking', // 👈 table name
+      'bookings', // 👈 table name
       'consulting_time',
       {
         type: Sequelize.STRING,
@@ -15,7 +15,7 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.changeColumn(
-      'booking',
+      'bookings',
       'consulting_time',
       {
         type: Sequelize.STRING,
