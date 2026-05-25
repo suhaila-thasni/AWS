@@ -24,7 +24,7 @@ export const proxyRequest = async (req: Request, res: Response, next: NextFuncti
     // e.g. gateway: /api/medicine-reminder/register → req.path = /register
     // microservice: /medicinremainder/register
    
-    const url = `${SERVICES.MEDICINREMINDER_SERVICE}${req.originalUrl.replace("/api", "")}`;
+    const url = `${SERVICES.MEDICINREMINDER_SERVICE}${req.originalUrl.replace("/api/medicinremainder", "/medicinremainder")}`;
 
 
     const options = {
