@@ -1,3 +1,7 @@
+
+
+
+
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 
@@ -12,18 +16,31 @@ interface IBooking {
   patient_phone: string;
   patient_place?: string;
   patient_dob?: string;
+  patient_age: number;
+  patient_gender?: string;
 
-  userId: number;      // User account
-  doctorId: number;    // Doctor
-  hospitalId: number;  // Hospital
+  userId?: number;
+
+  doctorId: number;
+  hospitalId: number;
 
   booking_date: Date;
-  consulting_time: string;
+
+  consulting_time?: string;
+
   doctor_name: string;
   doctor_department: string;
-  token: number;
 
-  status: "pending" | "accepted" | "declined" | "cancel";
+  token?: number;
+
+  status:
+    | "pending"
+    | "accepted"
+    | "declined"
+    | "completed"
+    | "cancel";
+
+  booking_status: "user booking" | "hospital booking";
 
   isActive?: boolean;
 }
@@ -34,7 +51,15 @@ interface IBooking {
 
 type BookingCreationAttributes = Optional<
   IBooking,
-  "id" | "status" | "isActive"
+  | "id"
+  | "userId"
+  | "patient_place"
+  | "patient_dob"
+  | "patient_gender"
+  | "consulting_time"
+  | "token"
+  | "status"
+  | "isActive"
 >;
 
 /* =======================
@@ -51,20 +76,37 @@ class Booking
   public patient_phone!: string;
   public patient_place?: string;
   public patient_dob?: string;
+  public patient_age!: number;
+  public patient_gender?: string;
 
-  public userId!: number;
+  public userId?: number;
+
   public doctorId!: number;
   public hospitalId!: number;
-   public doctor_name: string;
-   public doctor_department: string;
-   public token: number;
 
   public booking_date!: Date;
-  public consulting_time!: string;
 
-  public status!: "pending" | "accepted" | "declined" | "cancel";
+  public consulting_time?: string;
+
+  public doctor_name!: string;
+  public doctor_department!: string;
+
+  public token?: number;
+
+  public status!:
+    | "pending"
+    | "accepted"
+    | "declined"
+    | "completed"
+    | "cancel";
+
+  public booking_status!: "user booking" | "hospital booking";
 
   public isActive?: boolean;
+
+  // timestamps
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
 }
 
 /* =======================
@@ -80,21 +122,43 @@ Booking.init(
     },
 
     patient_name: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(120),
       allowNull: false,
+
+      validate: {
+        notEmpty: true,
+        len: [2, 120],
+      },
     },
 
     patient_phone: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(20),
       allowNull: false,
+
+      validate: {
+        notEmpty: true,
+        len: [10, 20],
+      },
     },
 
     patient_place: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(120),
+      allowNull: true,
     },
 
     patient_dob: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    patient_age: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+
+    patient_gender: {
+      type: DataTypes.ENUM("Male", "Female", "Other"),
+      allowNull: true,
     },
 
     userId: {
@@ -111,13 +175,15 @@ Booking.init(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
+
     doctor_name: {
-       type: DataTypes.STRING,
-       allowNull: false,
+      type: DataTypes.STRING(120),
+      allowNull: false,
     },
-    doctor_department:  {
-       type: DataTypes.STRING,
-       allowNull: false,
+
+    doctor_department: {
+      type: DataTypes.STRING(120),
+      allowNull: false,
     },
 
     hospitalId: {
@@ -131,7 +197,7 @@ Booking.init(
     },
 
     consulting_time: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
 
@@ -143,19 +209,55 @@ Booking.init(
         "completed",
         "cancel"
       ),
+
+      allowNull: false,
+
       defaultValue: "pending",
+    },
+
+    booking_status: {
+      type: DataTypes.ENUM("user booking", "hospital booking"),
+      allowNull: false,
+      defaultValue: "user booking",
     },
 
     isActive: {
       type: DataTypes.BOOLEAN,
+      allowNull: false,
       defaultValue: true,
     },
   },
+
   {
     sequelize,
+
     modelName: "Booking",
+
     tableName: "bookings",
+
     timestamps: true,
+
+    indexes: [
+      {
+        fields: ["doctorId"],
+      },
+
+      {
+        fields: ["hospitalId"],
+      },
+
+      {
+        fields: ["userId"],
+      },
+
+      {
+        fields: ["booking_date"],
+      },
+
+      {
+        fields: ["status"],
+      },
+    ],
   }
 );
 
