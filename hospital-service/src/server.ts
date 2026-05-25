@@ -13,8 +13,8 @@ const startServer = async () => {
         await connectDB();
         await connectRabbitMQ();
         // Ensure tables are in sync
-        const { default: Hospital } = await import("./models/hospital.model");
-        await Hospital.sync({ alter: true });
+        // const { default: Hospital } = await import("./models/hospital.model");
+        // await Hospital.sync({ alter: true });
         
         // Starting Hospital Service
         const server = app.listen(PORT, () => {
