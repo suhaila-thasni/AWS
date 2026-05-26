@@ -1,3 +1,7 @@
+
+
+
+
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -403,13 +407,13 @@ export const getDoctors = asyncHandler(
       search_query,
       page = 1,
       limit = 10,
-    } = req.query;
+    }: any = req.query;
 
-   hospitalId = String(normalizeQuery(hospitalId) || "");
-speciality = String(normalizeQuery(speciality) || "");
-name = String(normalizeQuery(name) || "");
-status = String(normalizeQuery(status) || "");
-search_query = String(normalizeQuery(search_query) || "");
+   hospitalId = normalizeQuery(hospitalId);
+speciality = normalizeQuery(speciality);
+name = normalizeQuery(name);
+status = normalizeQuery(status);
+search_query = normalizeQuery(search_query)
 
     const whereClause: any = {};
     const andConditions: any[] = [];
@@ -518,6 +522,7 @@ search_query = String(normalizeQuery(search_query) || "");
     ],
   });
 }
+
 
     if (andConditions.length > 0) {
       whereClause[Op.and] = andConditions;
