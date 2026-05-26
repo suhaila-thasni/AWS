@@ -1,10 +1,14 @@
+
+
+
+
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
 import Doctor from "../models/doctor.model";
 import { publishEvent } from "../events/publisher";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import twilio from "twilio";
 import axios from "axios";
 import { sendEmail } from "../services/mail.service";
@@ -457,41 +461,77 @@ export const getDoctors = asyncHandler(
     /* -------------------------- SEARCH QUERY ------------------------------ */
 
     if (search_query) {
-      andConditions.push({
-        [Op.or]: [
-          {
-            displayName: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-          {
-            email: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-          {
-            phone: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-          {
-            designation: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-          {
-            department: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-          {
-            gender: {
-              [Op.iLike]: `%${search_query}%`,
-            },
-          },
-        ],
-      });
-    }
+  const search = search_query;
+
+  andConditions.push({
+    [Op.or]: [
+      Sequelize.where(
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.col("displayName"),
+          ""
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+
+      Sequelize.where(
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.col("email"),
+          ""
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+
+      Sequelize.where(
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.col("phone"),
+          ""
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+
+      Sequelize.where(
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.col("designation"),
+          ""
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+
+      Sequelize.where(
+        Sequelize.fn(
+          "COALESCE",
+          Sequelize.col("department"),
+          ""
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+
+      Sequelize.where(
+        Sequelize.cast(
+          Sequelize.col("gender"),
+          "TEXT"
+        ),
+        {
+          [Op.iLike]: `%${search}%`,
+        }
+      ),
+    ],
+  });
+}
 
     if (andConditions.length > 0) {
       whereClause[Op.and] = andConditions;
