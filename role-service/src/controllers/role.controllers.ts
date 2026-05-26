@@ -13,7 +13,6 @@ export const createRole: any = asyncHandler(async (req: Request, res: Response) 
   
   const { name, description,  hospitalId, labId, pharmacyId  } = req.body;  
 
-
    
 
 let isExisting = null;
