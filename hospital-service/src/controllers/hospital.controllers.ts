@@ -629,7 +629,7 @@ export const getHospital = asyncHandler(
     // Hospital ID
     if (hospitalId && !isNaN(Number(hospitalId))) {
       andConditions.push({
-        hospitalId: Number(hospitalId),
+        id: Number(hospitalId),
       });
     }
 
