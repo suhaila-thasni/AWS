@@ -80,12 +80,12 @@ export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
 
   let {
     hospitalId,
-    name,
+    bloodGroup,
     search_query,
   }: any = req.query;
 
     if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
-  if (Array.isArray(name)) name = name[0];
+  if (Array.isArray(bloodGroup)) bloodGroup = bloodGroup[0];
   if (Array.isArray(search_query)) search_query = search_query[0];
 
 
@@ -97,8 +97,8 @@ export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
   if (hospitalId) {
     whereClause.hospitalId = Number(hospitalId);
   }
-    if (name) {
-    whereClause.name = {
+    if (bloodGroup) {
+    whereClause.bloodGroup = {
       [Op.iLike]: `%${name}%`,
     };
   }
@@ -106,7 +106,7 @@ export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
   if (search_query) {
     whereClause[Op.or] = [
       {
-        name: {
+        bloodGroup: {
           [Op.iLike]: `%${search_query}%`,
         },
       },
