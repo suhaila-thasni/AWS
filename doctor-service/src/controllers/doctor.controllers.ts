@@ -1,7 +1,3 @@
-
-
-
-
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -409,11 +405,11 @@ export const getDoctors = asyncHandler(
       limit = 10,
     } = req.query;
 
-    hospitalId = normalizeQuery(hospitalId);
-    speciality = normalizeQuery(speciality);
-    name = normalizeQuery(name);
-    status = normalizeQuery(status);
-    search_query = normalizeQuery(search_query);
+   hospitalId = String(normalizeQuery(hospitalId) || "");
+speciality = String(normalizeQuery(speciality) || "");
+name = String(normalizeQuery(name) || "");
+status = String(normalizeQuery(status) || "");
+search_query = String(normalizeQuery(search_query) || "");
 
     const whereClause: any = {};
     const andConditions: any[] = [];
@@ -460,8 +456,9 @@ export const getDoctors = asyncHandler(
 
     /* -------------------------- SEARCH QUERY ------------------------------ */
 
-    if (search_query) {
-  const search = search_query;
+
+    if (search_query?.trim()) {
+  const search = search_query.trim();
 
   andConditions.push({
     [Op.or]: [
@@ -491,17 +488,6 @@ export const getDoctors = asyncHandler(
         Sequelize.fn(
           "COALESCE",
           Sequelize.col("phone"),
-          ""
-        ),
-        {
-          [Op.iLike]: `%${search}%`,
-        }
-      ),
-
-      Sequelize.where(
-        Sequelize.fn(
-          "COALESCE",
-          Sequelize.col("designation"),
           ""
         ),
         {
