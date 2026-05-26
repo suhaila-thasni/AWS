@@ -643,7 +643,7 @@ export const getHospital = asyncHandler(
     // Name
     if (name.trim()) {
       andConditions.push({
-        displayName: {
+        name: {
           [Op.iLike]: `%${name.trim()}%`,
         },
       });
@@ -744,7 +744,7 @@ export const getHospital = asyncHandler(
         [Op.or]: [
 
           {
-            displayName: {
+            name: {
               [Op.iLike]: `%${search}%`,
             },
           },
