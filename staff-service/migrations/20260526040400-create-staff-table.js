@@ -1,94 +1,156 @@
-import { DataTypes } from "sequelize";
+"use strict";
 
 /** @type {import('sequelize-cli').Migration} */
-export default {
+module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("staff", {
       id: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
       },
 
       hospitalId: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
         allowNull: false,
       },
 
       staffId: {
-        type: DataTypes.STRING,
+        type: Sequelize.STRING,
         allowNull: true,
         unique: true,
       },
 
       name: {
-        type: DataTypes.STRING,
+        type: Sequelize.STRING,
         allowNull: false,
       },
 
-      designation: DataTypes.STRING,
-      joiningDate: DataTypes.DATE,
-      staffType: DataTypes.STRING,
-      jobType: DataTypes.STRING,
+      designation: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
 
-      imageUrl: DataTypes.STRING,
+      joiningDate: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
 
-      qualification: DataTypes.STRING,
+      staffType: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      jobType: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      qualification: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      imageUrl: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
 
       phone: {
-        type: DataTypes.STRING,
+        type: Sequelize.STRING,
         allowNull: false,
         unique: true,
       },
 
       email: {
-        type: DataTypes.STRING,
+        type: Sequelize.STRING,
         allowNull: true,
         unique: true,
       },
 
-      password: DataTypes.STRING,
-      gender: DataTypes.STRING,
-      dob: DataTypes.DATE,
+      password: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
 
-      knowLanguages: DataTypes.JSONB,
+      gender: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      dob: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+
+      knowLanguages: {
+        type: Sequelize.JSONB,
+        allowNull: true,
+      },
 
       roleId: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.INTEGER,
+        allowNull: true,
         defaultValue: 0,
       },
 
       address: {
-        type: DataTypes.JSONB,
+        type: Sequelize.JSONB,
         allowNull: false,
       },
 
       isActive: {
-        type: DataTypes.BOOLEAN,
+        type: Sequelize.BOOLEAN,
         defaultValue: true,
       },
 
       isDelete: {
-        type: DataTypes.BOOLEAN,
+        type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
 
-      deleteDate: DataTypes.DATE,
-      otp: DataTypes.STRING,
-      otpExpiry: DataTypes.DATE,
+      deleteDate: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+
+      otp: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      otpExpiry: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
 
       createdAt: {
         allowNull: false,
-        type: DataTypes.DATE,
+        type: Sequelize.DATE,
         defaultValue: Sequelize.fn("NOW"),
       },
 
       updatedAt: {
         allowNull: false,
-        type: DataTypes.DATE,
+        type: Sequelize.DATE,
         defaultValue: Sequelize.fn("NOW"),
       },
+    });
+
+    // Indexes (IMPORTANT for performance)
+    await queryInterface.addIndex("staff", ["phone"], {
+      unique: true,
+      name: "staff_phone_unique",
+    });
+
+    await queryInterface.addIndex("staff", ["email"], {
+      unique: true,
+      name: "staff_email_unique",
+    });
+
+    await queryInterface.addIndex("staff", ["hospitalId"], {
+      name: "staff_hospital_index",
     });
   },
 
