@@ -76,49 +76,57 @@ export const createOrUpdateStock = asyncHandler(async (req: any, res: Response) 
 });
 
 // 🔍 Get All Inventory
-export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
 
+export const getAllStock = asyncHandler(async (req: Request, res: Response) : Promise<void> => {
   let {
     hospitalId,
     bloodGroup,
     search_query,
   }: any = req.query;
 
-    if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
+  // Normalize array query params
+  if (Array.isArray(hospitalId)) hospitalId = hospitalId[0];
   if (Array.isArray(bloodGroup)) bloodGroup = bloodGroup[0];
   if (Array.isArray(search_query)) search_query = search_query[0];
 
-
-    const whereClause: any = {
+  const whereClause: any = {
     isDelete: false,
   };
 
-  // hospitalId
+  // ✅ hospital filter
   if (hospitalId) {
     whereClause.hospitalId = Number(hospitalId);
   }
-    if (bloodGroup) {
+
+  /**
+   * ✅ Search logic
+   * Priority:
+   * 1. search_query → general search
+   * 2. bloodGroup → direct filter
+   */
+
+  if (search_query) {
+    whereClause.bloodGroup = {
+      [Op.iLike]: `%${search_query}%`,
+    };
+  } else if (bloodGroup) {
     whereClause.bloodGroup = {
       [Op.iLike]: `%${bloodGroup}%`,
     };
   }
 
-  if (search_query) {
-    whereClause[Op.or] = [
-      {
-        bloodGroup: {
-          [Op.iLike]: `%${search_query}%`,
-        },
-      },
-    
-    ];
-  }
-
+  // ✅ Fetch data
   const stocks = await BloodBank.findAll({
-     where: whereClause,
-    order: [['bloodGroup', 'ASC']]
+    where: whereClause,
+    order: [["bloodGroup", "ASC"]],
   });
-  res.status(200).json({ success: true, count: stocks.length, data: stocks });
+
+   res.status(200).json({
+    success: true,
+    count: stocks.length,
+    data: stocks,
+  });
+  return;
 });
 
 
