@@ -9,6 +9,8 @@ import dotenv from "dotenv";
 import { Op, Sequelize } from "sequelize";
 dotenv.config();
 
+
+
 // REGISTER - POST /booking/register
 export const Registeration: any = asyncHandler(
   async (req: any, res: Response): Promise<void> => {
