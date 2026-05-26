@@ -1,6 +1,6 @@
 
 import { Request, Response } from "express";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import asyncHandler from "express-async-handler";
@@ -576,6 +576,55 @@ export const getStaffs = asyncHandler(
         { staffType: { [Op.iLike]: `%${search_query}%` } },
         { gender: { [Op.iLike]: `%${search_query}%` } },
         { staffId: { [Op.iLike]: `%${search_query}%` } },
+         Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.district"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search_query}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.place"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search_query}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.state"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search_query}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.country"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search_query}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.pincode"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search_query}%`,
+            }
+          ),
       ];
     }
 
