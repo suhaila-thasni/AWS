@@ -8,13 +8,16 @@ import { Op, Sequelize } from "sequelize";
 import twilio from "twilio";
 import { logger } from "../utils/logger";
 import { sendEmail } from "../services/mail.service";
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
-    sameSite: "none" ,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 14 * 24 * 60 * 60 * 1000, // 2 weeks
     path: "/",
   });
@@ -71,7 +74,7 @@ export const sendOtpEmail = async (email: string, otp: string, hospitalName: str
 // REGISTER - POST /hospital/register
 export const Registeration: any = asyncHandler(async (req: Request, res: Response) => {
   const { name, type, address, phone, emergencyContact, email, password, latitude, longitude,  about,  working_hours_clinic, working_hours_general,  working_hours_clinic_nobreak, web } = req.body;
-
+  
 
   const exist = await Hospital.findOne({ where: { phone: phone } });
   if (exist) {
@@ -103,7 +106,9 @@ export const Registeration: any = asyncHandler(async (req: Request, res: Respons
 
   await publishEvent("hospital_events", "HOSPITAL_REGISTERED", {
     hospitalId: newHospital.id,
+    hospitalName: newHospital.name,
     phone: newHospital.phone,
+    email: newHospital.email,
   });
 
   res.status(201).json({
@@ -129,6 +134,7 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
   // Find hospital by email OR phone
   const hospital = await Hospital.scope("withPassword").findOne({
     where: {
+      isDelete: false,
       [Op.or]: [
         email ? { email } : null,
         phone ? { phone } : null,
@@ -158,14 +164,14 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId }, jwtKey, {
+  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
   // Remove password and OTP fields from response
   const { password: _, otp: __, otpExpiry: ___, ...safeHospital } = hospital.get();
 
-  const refreshToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -194,7 +200,12 @@ export const loginWithPhone: any = asyncHandler(async (req: Request, res: Respon
 
   let numericPhone = phone.replace(/\D/g, "").slice(-10);
 
-  const hospital = await Hospital.findOne({ where: { phone: numericPhone } });
+  const hospital = await Hospital.findOne({
+    where: {
+      phone: numericPhone,
+      isDelete: false
+    }
+  });
   if (!hospital) {
     res.status(404).json({
       success: false,
@@ -204,12 +215,12 @@ export const loginWithPhone: any = asyncHandler(async (req: Request, res: Respon
   }
 
   // Generate JWT tokens
-  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, }, process.env.JWT_SECRET || "supersecretjwtkey", {
+  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: false }, process.env.JWT_SECRET || "supersecretjwtkey", {
     expiresIn: "15m",
   });
 
   const refreshToken = jwt.sign(
-    { id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId },
+    { id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: true },
     process.env.JWT_SECRET || "supersecretjwtkey",
     { expiresIn: "2w" }
   );
@@ -259,7 +270,8 @@ export const loginWithPhone: any = asyncHandler(async (req: Request, res: Respon
   res.status(200).json({
     success: true,
     status: 200,
-    token,
+    // token,
+    otp,
     error: null,
     message: numericPhone === APPLE_TEST_NUMBER ? "OTP sent (TEST ACCOUNT)" : "OTP sent to your registered phone and email",
     data: numericPhone === APPLE_TEST_NUMBER ? { otp: APPLE_TEST_OTP } : null,
@@ -304,6 +316,7 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
     res.status(400).json({ success: false, message: "Identifier (phone/email) and OTP are required" });
     return;
   }
+  
 
   let hospital;
   if (phone) {
@@ -327,14 +340,14 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
   await hospital.update({ otp: null, otpExpiry: null });
 
   const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
-  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId }, jwtKey, {
+  const token = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: false }, jwtKey, {
     expiresIn: "15m",
   });
 
   // Remove password and OTP fields from response
   const { password: _, otp: __, otpExpiry: ___, ...safeHospital } = hospital.get();
 
-  const refreshToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId }, jwtKey, {
+  const refreshToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: true }, jwtKey, {
     expiresIn: "2w",
   });
 
@@ -353,11 +366,15 @@ export const verifyOtp: any = asyncHandler(async (req: Request, res: Response) =
 export const verifyLoginOtp = verifyOtp;
 
 // RESET PASSWORD - POST /hospital/auth/reset-password
-export const resetPassword: any = asyncHandler(async (req: Request, res: Response) => {
-  const { email, newPassword } = req.body;
+export const resetPassword: any = asyncHandler(async (req: any, res: Response) => {
+  const { newPassword } = req.body;
 
-  const hospital = await Hospital.scope("withPassword").findOne({ where: { email } });
+  const hospital = await Hospital.scope("withPassword").findByPk(req.user.id);
 
+  if (!hospital) {
+    res.status(404).json({ success: false, message: "Hospital not found" });
+    return;
+  }
 
   hospital.password = newPassword;
   hospital.otp = null as any;
@@ -409,7 +426,12 @@ export const sendCustomEmail: any = asyncHandler(async (req: Request, res: Respo
 
 // GET ONE - GET /hospital/:id
 export const getanHospital : any = asyncHandler(async (req: Request, res: Response) => {
-  const hospital = await  Hospital.findByPk(req.params.id);
+  const hospital = await Hospital.findOne({
+    where: {
+      id: req.params.id,
+      isDelete: false
+    }
+  });
   
   
   if (!hospital) {
@@ -435,30 +457,70 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   const { id } = req.params;
   const updatePayload = req.body;
 
-  const hospital = await Hospital.update(updatePayload, {
-    where: { id: id },
-    returning: true,
-  });
+  let hospital: any;
+  try {
+    hospital = await Hospital.update(updatePayload, {
+      where: { id, isDelete: false },
+      returning: true,
+      validate: false,   // validators run at request level; skip Sequelize re-validation on partial update
+    });
+  } catch (err: any) {
+    if (err.name === "SequelizeValidationError" || err.name === "SequelizeUniqueConstraintError") {
+      const msgs = err.errors?.map((e: any) => e.message) ?? [err.message];
+      res.status(400).json({ success: false, message: msgs.join(", "), error: { code: "VALIDATION_ERROR", details: msgs } });
+      return;
+    }
+    throw err; // re-throw unknown errors to global handler
+  }
 
   if (!hospital[1] || hospital[1].length === 0) {
     res.status(404).json({
       success: false,
       message: "Hospital not found",
-      status: 200,
       data: null,
       error: { code: "HOSPITAL_NOT_FOUND", details: null },
     });
     return;
   }
 
+  const updatedHospital = hospital[1][0];
+
+  // Fetch staff and doctor IDs for notification fan-out (failures are non-fatal)
+  let staffIds: number[] = [];
+  let doctorIds: number[] = [];
+
+  try {
+    const staffRes = await axios.get(`${process.env.STAFF_SERVICE_URL}/staff`, {
+      params: { hospitalId: updatedHospital.id },
+    });
+    const raw = staffRes.data?.data ?? [];
+    staffIds = raw.map((s: any) => s.id).filter(Boolean);
+  } catch (err) {
+    logger.warn("Could not fetch staffIds for hospital update notification", { hospitalId: updatedHospital.id });
+  }
+
+  try {
+    const doctorRes = await axios.get(`${process.env.DOCTOR_SERVICE_URL}/doctor`, {
+      params: { hospitalId: updatedHospital.id },
+    });
+    const raw = doctorRes.data?.data ?? [];
+    doctorIds = raw.map((d: any) => d.id).filter(Boolean);
+  } catch (err) {
+    logger.warn("Could not fetch doctorIds for hospital update notification", { hospitalId: updatedHospital.id });
+  }
+
+  // Publish event → notification-service fans out to superadmin, staff, doctors
   await publishEvent("hospital_events", "HOSPITAL_UPDATED", {
-    hospitalId: hospital[1][0].id,
+    hospitalId: updatedHospital.id,
+    hospitalName: updatedHospital.name,
+    staffIds,
+    doctorIds,
   });
 
   res.status(200).json({
     success: true,
     message: "successfully updated",
-    data: hospital[1][0],
+    data: updatedHospital,
     error: null,
   });
 });
@@ -467,7 +529,9 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
 export const hospitalDelete: any = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
-  const hospital = await Hospital.findByPk(id);
+  const hospital = await Hospital.findOne({
+    where: { id, isDelete: false }
+  });
   if (!hospital) {
     res.status(404).json({
       success: false,
@@ -478,16 +542,34 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
     return;
   }
 
-  // 🔥 Perform Soft Delete (requires paranoid: true in model)
-  await hospital.destroy();
+  // 🔥 Move to blacklist (soft delete)
+  await hospital.update({
+    isActive: false,
+    isDelete: true,
+    deleteDate: new Date(),
+  });
 
-  await publishEvent("hospital_events", "HOSPITAL_DELETED", {
+  await publishEvent("hospital_events", "HOSPITAL_BLACKLISTED", {
     hospitalId: id,
   });
 
+    try {
+     
+      await axios.post(`${process.env.BULMQ_SERVICE_URL}/blacklist-reminder/hospital`, {
+        hospitalId: id,
+        hospitalName: hospital.name,
+        phone: hospital.phone,
+        blacklistDate: new Date(),
+      }, {
+      headers: { Authorization: req.headers.authorization }
+    });
+  } catch (error) {
+    console.error("Failed to schedule hospital blacklist reminder:", error);
+  }
+
   res.status(200).json({
     success: true,
-    message: "Hospital account soft-deleted successfully",
+    message: "Hospital account moved to blacklist. It will be permanently deleted after 30 days.",
     status: 200,
     data: null,
     error: null,
@@ -495,18 +577,17 @@ export const hospitalDelete: any = asyncHandler(async (req: Request, res: Respon
 });
 
 // GET ALL - GET /hospital 
+export const getHospital = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
 
-
-export const getHospital = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-
-   const normalizeQuery = (value: any) =>
+    const normalizeQuery = (value: any) =>
       Array.isArray(value) ? value[0] : value;
 
     let {
       speciality,
       name,
-    country,
-    state,
+      country,
+      state,
       status,
       district,
       place,
@@ -517,148 +598,236 @@ export const getHospital = asyncHandler(async (req: Request, res: Response): Pro
       limit = 10,
     }: any = req.query;
 
-    speciality = normalizeQuery(speciality);
-    hospitalId = normalizeQuery(hospitalId);
+    /* -------------------------- NORMALIZE -------------------------- */
 
-    name = normalizeQuery(name);
-    status = normalizeQuery(status);
-   country = normalizeQuery(country);
-    state = normalizeQuery(state);
-    district = normalizeQuery(district);
-    place = normalizeQuery(place);
-    pincode = normalizeQuery(pincode);
-    search_query = normalizeQuery(search_query);
+    speciality = String(normalizeQuery(speciality) || "");
+    hospitalId = String(normalizeQuery(hospitalId) || "");
+    name = String(normalizeQuery(name) || "");
+    status = String(normalizeQuery(status) || "");
+    country = String(normalizeQuery(country) || "");
+    state = String(normalizeQuery(state) || "");
+    district = String(normalizeQuery(district) || "");
+    place = String(normalizeQuery(place) || "");
+    pincode = String(normalizeQuery(pincode) || "");
+    search_query = String(normalizeQuery(search_query) || "");
 
-
-    const whereClause: any = {};
+    /* -------------------------- PAGINATION -------------------------- */
 
     const pageNum = Math.max(Number(page) || 1, 1);
-    const limitNum = Math.max(Number(limit) || 10, 1);
 
-    // Hospital filter
-    
+    const limitNum = Math.min(
+      Math.max(Number(limit) || 10, 1),
+      100
+    );
 
-    if (hospitalId && !isNaN(Number(hospitalId))) {
-      whereClause.hospitalId = Number(hospitalId);
-    }
+    /* -------------------------- WHERE CLAUSE -------------------------- */
 
-    // Status filter
-    if (status !== undefined) {
-      whereClause.isActive = status === "true";
-    }
-
-    // Name filter
-    if (name) {
-      whereClause.displayName = {
-        [Op.iLike]: `%${name}%`,
-      };
-    }
-
-    // Speciality filter
-    if (speciality) {
-      whereClause.type = {
-        [Op.iLike]: `%${speciality}%`,
-      };
-    }
-
-
-     // JSONB address filters
     const andConditions: any[] = [];
 
-    if (pincode && !isNaN(Number(pincode))) {
-      andConditions.push(
-        Sequelize.where(
-          Sequelize.cast(Sequelize.json("address.pincode"), "text"),
-          String(pincode)
-        )
-      );
+    /* -------------------------- FILTERS -------------------------- */
+
+    // Hospital ID
+    if (hospitalId && !isNaN(Number(hospitalId))) {
+      andConditions.push({
+        hospitalId: Number(hospitalId),
+      });
     }
 
-    if (place) {
+    // Status
+    if (status) {
+      andConditions.push({
+        isActive: status === "true",
+      });
+    }
+
+    // Name
+    if (name.trim()) {
+      andConditions.push({
+        displayName: {
+          [Op.iLike]: `%${name.trim()}%`,
+        },
+      });
+    }
+
+    // Speciality
+    if (speciality.trim()) {
+      andConditions.push({
+        type: {
+          [Op.iLike]: `%${speciality.trim()}%`,
+        },
+      });
+    }
+
+    /* -------------------------- JSONB FILTERS -------------------------- */
+
+    // Pincode
+    if (pincode.trim()) {
       andConditions.push(
         Sequelize.where(
-          Sequelize.cast(Sequelize.json("address.place"), "text"),
+          Sequelize.cast(
+            Sequelize.json("address.pincode"),
+            "TEXT"
+          ),
           {
-            [Op.iLike]: `%${place}%`,
+            [Op.iLike]: `%${pincode.trim()}%`,
           }
         )
       );
     }
 
-    if (country) {
+    // Place
+    if (place.trim()) {
       andConditions.push(
         Sequelize.where(
-          Sequelize.cast(Sequelize.json("address.country"), "text"),
+          Sequelize.cast(
+            Sequelize.json("address.place"),
+            "TEXT"
+          ),
           {
-            [Op.iLike]: `%${country}%`,
+            [Op.iLike]: `%${place.trim()}%`,
           }
         )
       );
     }
 
-    if (state) {
+    // Country
+    if (country.trim()) {
       andConditions.push(
         Sequelize.where(
-          Sequelize.cast(Sequelize.json("address.state"), "text"),
+          Sequelize.cast(
+            Sequelize.json("address.country"),
+            "TEXT"
+          ),
           {
-            [Op.iLike]: `%${state}%`,
+            [Op.iLike]: `%${country.trim()}%`,
           }
         )
       );
     }
 
-    if (district) {
+    // State
+    if (state.trim()) {
       andConditions.push(
         Sequelize.where(
-          Sequelize.cast(Sequelize.json("address.district"), "text"),
+          Sequelize.cast(
+            Sequelize.json("address.state"),
+            "TEXT"
+          ),
           {
-            [Op.iLike]: `%${district}%`,
+            [Op.iLike]: `%${state.trim()}%`,
           }
         )
       );
     }
 
-    // Search query
-    if (search_query) {
-      whereClause[Op.or] = [
-        {
-          name: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          email: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-        {
-          phone: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-     
-        {
-          type: {
-            [Op.iLike]: `%${search_query}%`,
-          },
-        },
-
-    Sequelize.literal(
-      `address->>'district' ILIKE '%${search_query}%'`
-    ),
-
-       Sequelize.literal(
-      `address->>'place' ILIKE '%${search_query}%'`
-    ),
-       Sequelize.literal(
-      `address->>'state' ILIKE '%${search_query}%'`
-    ),
-       Sequelize.literal(
-      `address->>'country' ILIKE '%${search_query}%'`
-    ),
-      
-      ];
+    // District
+    if (district.trim()) {
+      andConditions.push(
+        Sequelize.where(
+          Sequelize.cast(
+            Sequelize.json("address.district"),
+            "TEXT"
+          ),
+          {
+            [Op.iLike]: `%${district.trim()}%`,
+          }
+        )
+      );
     }
+
+    /* -------------------------- GLOBAL SEARCH -------------------------- */
+
+    if (search_query.trim()) {
+      const search = search_query.trim();
+
+      andConditions.push({
+        [Op.or]: [
+
+          {
+            displayName: {
+              [Op.iLike]: `%${search}%`,
+            },
+          },
+
+          {
+            email: {
+              [Op.iLike]: `%${search}%`,
+            },
+          },
+
+          {
+            phone: {
+              [Op.iLike]: `%${search}%`,
+            },
+          },
+
+          {
+            type: {
+              [Op.iLike]: `%${search}%`,
+            },
+          },
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.district"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.place"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.state"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.country"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search}%`,
+            }
+          ),
+
+          Sequelize.where(
+            Sequelize.cast(
+              Sequelize.json("address.pincode"),
+              "TEXT"
+            ),
+            {
+              [Op.iLike]: `%${search}%`,
+            }
+          ),
+        ],
+      });
+    }
+
+    /* -------------------------- FINAL WHERE -------------------------- */
+
+    const whereClause =
+      andConditions.length > 0
+        ? { [Op.and]: andConditions }
+        : {};
+
+    /* -------------------------- QUERY -------------------------- */
 
     const hospital = await Hospital.findAndCountAll({
       where: whereClause,
@@ -667,7 +836,12 @@ export const getHospital = asyncHandler(async (req: Request, res: Response): Pro
       order: [["createdAt", "DESC"]],
     });
 
-    const totalPages = Math.ceil(hospital.count / limitNum);
+    /* -------------------------- PAGINATION -------------------------- */
+
+    const totalPages =
+      Math.ceil(hospital.count / limitNum) || 1;
+
+    /* -------------------------- RESPONSE -------------------------- */
 
     res.status(200).json({
       success: true,
@@ -682,9 +856,34 @@ export const getHospital = asyncHandler(async (req: Request, res: Response): Pro
       },
       error: null,
     });
-  
+
+    return;
+  }
+);
 
 
+// GET BLACKLISTED - GET /hospital/blacklist
+export const getBlacklistedHospitals: any = asyncHandler(async (req: Request, res: Response) => {
+  const hospital = await Hospital.findAll({
+    where: { isDelete: true }
+  });
+
+  if (hospital.length === 0) {
+    res.status(404).json({
+      success: false,
+      message: "No blacklisted hospitals found",
+      data: null,
+      error: { code: "NO_DATA_FOUND", details: null },
+    });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    status: "Success",
+    data: hospital,
+    error: null,
+  });
 });
 
 
@@ -698,7 +897,7 @@ export const refreshHospitalToken: any = asyncHandler(async (req: Request, res: 
     return;
   }
 
-  const jwtKey = process.env.JWT_SECRET || "supersecretjwtkey";
+  const jwtKey = process.env.JWT_SECRET;
 
   try {
     const decoded: any = jwt.verify(refreshToken, jwtKey);
@@ -712,7 +911,7 @@ export const refreshHospitalToken: any = asyncHandler(async (req: Request, res: 
       return;
     }
 
-    const newToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId }, jwtKey, {
+    const newToken = jwt.sign({ id: hospital.id, name: hospital.name, role: "hospital", roleId: hospital.roleId, isRefresh: false }, jwtKey, {
       expiresIn: "15m",
     });
 
@@ -736,3 +935,10 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
   });
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
+
+
+
+
+
+
+
