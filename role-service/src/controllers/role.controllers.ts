@@ -310,6 +310,14 @@ export const getRole = asyncHandler(async (req: Request, res: Response): Promise
     order: [["createdAt", "DESC"]],
   });
 
+  console.log({
+     success: false,
+      message: "No data found",
+      data: [],
+      admin,
+      error: { code: "NO_DATA_FOUND", details: null },
+  })
+
   if (role.count === 0) {
      res.status(404).json({
       success: false,
