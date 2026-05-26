@@ -99,7 +99,7 @@ export const getAllStock = asyncHandler(async (req: Request, res: Response) => {
   }
     if (bloodGroup) {
     whereClause.bloodGroup = {
-      [Op.iLike]: `%${name}%`,
+      [Op.iLike]: `%${bloodGroup}%`,
     };
   }
 
