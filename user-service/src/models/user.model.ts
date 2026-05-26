@@ -1,4 +1,3 @@
-
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/db";
 
@@ -140,7 +139,6 @@ User.init(
     modelName: "User",
     tableName: "users",
     timestamps: true,
-    paranoid: true, // Enables soft deletes (sets deletedAt instead of row deletion)
   }
 );
 
