@@ -69,7 +69,7 @@ export const sendDoctorOtpEmail = async (email: string, otp: string, doctorName:
 // REGISTER - POST /doctor/register
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   const { hospitalId, firstName, lastName, phone, joiningDate, email, password, fees, department, specialist, dob, gender, knowLanguages,   consultingTwo,
-  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting ,experience, appointmentCount, regNo} = req.body;
+  consultingOne, bookingOpen, qualification, address, displayName, outDoorConsulting ,experience, appointmentCount, regNo, hospitalName } = req.body;
  
 
   if (!hospitalId) {
@@ -130,7 +130,8 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
    hospitalId,
    experience,
     appointmentCount,
-     regNo
+     regNo,
+      hospitalName
   });
 
   await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
