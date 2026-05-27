@@ -28,80 +28,87 @@ export const Registeration = asyncHandler(
       hospitalId,
     } = req.body;
 
-    // Check hospital
+    let hospital = null;
+
+    // ✅ validate hospital only if provided
     if (hospitalId) {
-      const existHospital = await Hospital.findOne({
+      hospital = await Hospital.findOne({
         where: { id: hospitalId },
       });
 
-      if (!existHospital) {
+      if (!hospital) {
         res.status(404).json({
           success: false,
           message: "Hospital not found",
-          data: null,
-          error: {
-            code: "HOSPITAL_NOT_FOUND",
-            details: null,
-          },
-        });
-        return;
-      }
-
-      // Check existing prescription
-      const existPrescription = await Prescription.findOne({
-        where: { hospitalId },
-      });
-
-      if (existPrescription) {
-        res.status(409).json({
-          success: false,
-          message: "Prescription already exists",
-          data: null,
-          error: {
-            code: "PRESCRIPTION_ALREADY_EXISTS",
-            details: null,
-          },
         });
         return;
       }
     }
 
-    // Create prescription
-    const newPrescription = await Prescription.create({
-      bgColor,
-      textColor,
-      textAlign,
-      fontWeight,
-      fontSize,
-      editable,
-      height,
-      width,
-      y,
-      x,
-      content,
-      type,
-      templateType,
-      hospitalId,
-    });
+    let existingPrescription = null;
 
-    // Publish event
+    // ✅ ONLY check uniqueness if hospitalId exists
+    if (hospitalId) {
+      existingPrescription = await Prescription.findOne({
+        where: { hospitalId },
+      });
+    }
+
+    let result;
+
+    if (existingPrescription) {
+      // ✅ UPDATE instead of create
+      result = await existingPrescription.update({
+        bgColor,
+        textColor,
+        textAlign,
+        fontWeight,
+        fontSize,
+        editable,
+        height,
+        width,
+        y,
+        x,
+        content,
+        type,
+        templateType,
+      });
+    } else {
+      // ✅ CREATE new
+      result = await Prescription.create({
+        bgColor,
+        textColor,
+        textAlign,
+        fontWeight,
+        fontSize,
+        editable,
+        height,
+        width,
+        y,
+        x,
+        content,
+        type,
+        templateType,
+        hospitalId: hospitalId || null,
+      });
+    }
+
+    // ✅ publish event
     await publishEvent(
       "hospitalPrescription_events",
       "HOSPITALPRESCRIPTION_REGISTERED",
       {
-        hospitalId,
+        hospitalId: hospitalId || null,
       }
     );
 
     res.status(201).json({
       success: true,
-      message: "Registration completed successfully",
-      data: newPrescription,
-      error: null,
+      message: "Saved successfully",
+      data: result,
     });
   }
 );
-
 
 // ================= GET PRESCRIPTION =================
 export const getPrescription = asyncHandler(
