@@ -1,4 +1,3 @@
-
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 import bcrypt from "bcrypt";
@@ -55,6 +54,7 @@ interface IDoctor {
   password?: string;
   fees?: number;
   dob?: Date;
+  hospitalName: string;
   gender?: string;
   knowLanguages?: string[];
   qualification?: string;
@@ -127,6 +127,7 @@ class Doctor
   public regNo?: string;
   public autoDecline?: number;
   public appointmentCount?: number;
+  public hospitalName: string;
 
 }
 
@@ -157,6 +158,11 @@ Doctor.init(
     },
 
     displayName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+
+      hospitalName: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -294,7 +300,6 @@ Doctor.init(
     modelName: "Doctor",
     tableName: "doctor",
     timestamps: true,
-
 
     defaultScope: {
       attributes: { exclude: ["password", "otp", "otpExpiry"] },
