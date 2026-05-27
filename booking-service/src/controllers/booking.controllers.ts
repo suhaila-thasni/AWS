@@ -30,7 +30,8 @@ export const Registeration: any = asyncHandler(
       consulting_time,
       booking_status,
       status,
-      token
+      token,
+      patientId
     } = req.body;
     
 
@@ -114,7 +115,8 @@ export const Registeration: any = asyncHandler(
       consulting_time,
       booking_status: booking_status || "user booking",
       status,
-      token
+      token,
+      patientId
     });
 
     // ==============================
