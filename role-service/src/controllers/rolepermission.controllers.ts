@@ -5,112 +5,71 @@ import { publishEvent } from "../events/publisher";
 
 // REGISTER - POST /Rolepermission
 
-export const createRolepermission: any = asyncHandler(
+export const createRolepermission = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-
     try {
+      const { roleId, permissionIds, pharmacyId, hospitalId, labId } = req.body;
 
-      const {
-        roleId,
-        permissionIds,
-        hospitalId,
-        labId,
-        pharmacyId,
-      } = req.body;
-
-      // ✅ Validation
       if (!roleId || !Array.isArray(permissionIds)) {
         res.status(400).json({
           success: false,
-          message: "roleId and permissionIds required",
+          message: "roleId and permissionIds array required",
         });
-        return; 
+        return;
       }
 
-      // ✅ Base condition
-      const whereClause: any = {
-        roleId,
-      };
-
-      if (hospitalId) {
-        whereClause.hospitalId = hospitalId;
-      }
-
-      if (labId) {
-        whereClause.labId = labId;
-      }
-
-      if (pharmacyId) {
-        whereClause.pharmacyId = pharmacyId;
-      }
-
-      // ✅ Get existing permissions
-      const existingPermissions = await Rolepermission.findAll({
-        where: whereClause,
+      // 1️⃣ Get existing permissions
+      const existing = await Rolepermission.findAll({
+        where: { roleId },
       });
 
-      const existingIds = existingPermissions.map(
-        (item: any) => item.permissionId
-      );
+      const existingIds = existing.map((p: any) => p.permissionId);
 
-      // ✅ ADD new permissions
-      const newPermissions = permissionIds.filter(
-        (id: number) => !existingIds.includes(id)
-      );
-
-      if (newPermissions.length > 0) {
-
-        const createData = newPermissions.map((pid: number) => ({
-          roleId,
-          permissionId: pid,
-          hospitalId: hospitalId || null,
-          labId: labId || null,
-          pharmacyId: pharmacyId || null,
-        }));
-
-        await Rolepermission.bulkCreate(createData);
-      }
-
-      // ✅ REMOVE missing permissions
-      const removePermissions = existingIds.filter(
+      // 2️⃣ Find what to delete
+      const toDelete = existingIds.filter(
         (id: number) => !permissionIds.includes(id)
       );
 
-      if (removePermissions.length > 0) {
+      // 3️⃣ Find what to add
+      const toAdd = permissionIds.filter(
+        (id: number) => !existingIds.includes(id)
+      );
 
+      // 4️⃣ DELETE removed permissions
+      if (toDelete.length > 0) {
         await Rolepermission.destroy({
           where: {
-            ...whereClause,
-            permissionId: removePermissions,
+            roleId,
+            permissionId: toDelete,
           },
         });
       }
 
-      // ✅ Final updated permissions
-      const updatedPermissions = await Rolepermission.findAll({
-        where: whereClause,
-      });
+      // 5️⃣ INSERT new permissions only
+      const newRecords = toAdd.map((pid: number) => ({
+        roleId,
+        permissionId: pid,
+        pharmacyId: pharmacyId || null,
+        hospitalId: hospitalId || null,
+        labId: labId || null,
+      }));
+
+      if (newRecords.length > 0) {
+        await Rolepermission.bulkCreate(newRecords);
+      }
 
       res.status(200).json({
         success: true,
         message: "Role permissions synced successfully",
-        data: updatedPermissions,
       });
-
-      return;
-
     } catch (error: any) {
-
-     res.status(500).json({
+      res.status(500).json({
         success: false,
         message: error.message || "Internal server error",
       });
-      return;
-
     }
   }
 );
-
 
 
 // GET ONE - GET /Rolepermission/:id
