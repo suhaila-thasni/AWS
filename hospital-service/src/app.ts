@@ -9,7 +9,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 
 import hospitalRoutes from "./routes/hospital.routes";
-import prescriptionTemplateRoutes from "./routes/hospital.routes";
+import prescriptionTemplateRoutes from "./routes/prescription.routes";
 
 import { requestLogger } from "./middleware/logger.middleware";
 
