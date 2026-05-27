@@ -4,6 +4,7 @@ import { connectDB } from "./config/db";
 import { connectRabbitMQ } from "./events/publisher";
 import { env } from "./config/env";
 import { logger } from "./utils/logger";
+import { startCleanupJob } from "./utils/cleanup";
 
 const PORT = env.PORT;
 
@@ -13,8 +14,14 @@ const startServer = async () => {
         await connectDB();
         await connectRabbitMQ();
         // Ensure tables are in sync
-        // const { default: Hospital } = await import("./models/hospital.model");
-        // await Hospital.sync({ alter: true });
+        const { default: Hospital } = await import("./models/hospital.model");
+         const { default: TemplateItem } = await import("./models/prescription.model");
+
+        await Hospital.sync({ alter: true });
+        await TemplateItem.sync({ alter: true });
+        
+        // Start background cleanup for blacklisted hospitals
+        startCleanupJob();
         
         // Starting Hospital Service
         const server = app.listen(PORT, () => {
