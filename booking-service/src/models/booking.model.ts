@@ -1,3 +1,7 @@
+
+
+
+
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/db";
 
@@ -26,6 +30,7 @@ interface IBooking {
 
   doctor_name: string;
   doctor_department: string;
+  patientId: number;
 
   token?: number;
 
@@ -88,6 +93,7 @@ class Booking
   public doctor_department!: string;
 
   public token?: number;
+  public patientId: number;
 
   public status!:
     | "pending"
@@ -172,6 +178,10 @@ Booking.init(
       allowNull: false,
     },
 
+      patientId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     doctor_name: {
       type: DataTypes.STRING(120),
       allowNull: false,
