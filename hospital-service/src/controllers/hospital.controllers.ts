@@ -121,7 +121,7 @@ export const Registeration: any = asyncHandler(async (req: Request, res: Respons
 
 // LOGIN - POST /hospital/login
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
-  const { email, phone, password } = req.body;
+  const { email, phone, password, fcmToken } = req.body;
 
   if ((!email && !phone) || !password) {
     res.status(400).json({
@@ -151,6 +151,18 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
     });
     return;
   }
+
+    if (fcmToken) {
+  await Hospital.update(
+    { fcmToken },
+    {
+      where: {
+        email,
+      },
+    }
+  );
+}
+
 
   const checkPassword = await bcrypt.compare(password, hospital.password || "");
   if (!checkPassword) {
