@@ -5,6 +5,7 @@ import Patient from "./patient.model";
 interface IPatientVitals {
   id: number;
   patientId: number;
+  prescriptionId: number;
 
   temperature?: number;
   pulse?: number;
@@ -32,6 +33,7 @@ class PatientVitals extends Model<IPatientVitals> implements IPatientVitals {
   public bmi!: number;
   public waist!: number;
   public bsa!: number;
+  public prescriptionId: number;
 }
 
 PatientVitals.init(
@@ -43,6 +45,10 @@ PatientVitals.init(
     },
 
     patientId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    prescriptionId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     },
@@ -63,7 +69,6 @@ PatientVitals.init(
     modelName: "PatientVitals",
     tableName: "patient_vitals",
     timestamps: true,
-    paranoid: true,
   }
 );
 
