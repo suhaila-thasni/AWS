@@ -23,7 +23,7 @@ breaker.fallback(() => {
 
 export const proxyRequest = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const url = `${SERVICES.USER_SERVICE}${req.originalUrl.replace("/api/users", "/users").replace("/api/patients", "/patients").replace("/api/prescription", "/prescription")}`;
+    const url = `${SERVICES.USER_SERVICE}${req.originalUrl.replace("/api/users", "/users").replace("/api/patients", "/patients").replace("/api/prescription", "/prescription").replace("/api/vitals", "/vitals")}`;
 
     const options = {
       method: req.method,
