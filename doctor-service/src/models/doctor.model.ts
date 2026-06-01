@@ -43,7 +43,6 @@ interface IOutDoorConsulting {
 
 interface IDoctor {
   id: number;
-  
   firstName: string;
   lastName: string;
   department?: string;
@@ -77,6 +76,7 @@ interface IDoctor {
   regNo?: string;
   autoDecline?: number;
   appointmentCount?: number;
+  fcmToken: string;
 }
 
 /* =======================
@@ -128,6 +128,7 @@ class Doctor
   public autoDecline?: number;
   public appointmentCount?: number;
   public hospitalName: string;
+  public fcmToken: string;
 
 }
 
@@ -199,6 +200,10 @@ Doctor.init(
         notEmpty: true,
       },
     },
+        fcmToken: {
+      type: DataTypes.STRING,
+    },
+
 
     email: {
       type: DataTypes.STRING,
