@@ -32,6 +32,15 @@ import {
   updateData
 } from "../controllers/prescription.controller";
 
+import {
+addVitals,
+deleteVitals,
+getLatestVitals,
+getVitalsById,
+getVitalsByPatient,
+updateVitals
+} from "../controllers/patientVitals.controller";
+
 
 import { validate, validateParams } from "../middleware/validate.middleware";
 import { registerSchema, loginSchema, idParamSchema, loginWithPhoneSchema, verifyOtpSchema, updateUserSchema, sendOtpEmailSchema, verifyOtpEmailSchema, resetPasswordEmailSchema, changePasswordSchema } from "../validators/user.validator";
@@ -83,6 +92,14 @@ router.get("/prescription",  getPrescription);
 router.get("/prescription/:id",  getAPrescription);
 router.put("/prescription/:id",  updateData);
 router.delete("/prescription/:id",  deletePrescription);
+
+router.post("/vitals",  addVitals);
+router.get("/vitals", authenticate, checkPermission("vitals", "view"),getLatestVitals);
+router.get("/vitals/:id", authenticate, checkPermission("vitals", "view"), getVitalsById);
+router.put("/vitals/:id", authenticate, checkPermission("vitals", "edit"), updateVitals);
+router.get("/vitals/patient/:id",  getVitalsByPatient);
+router.delete("/vitals/:id", authenticate, checkPermission("vitals", "delete"), deleteVitals);
+
 
 
 export default router;
