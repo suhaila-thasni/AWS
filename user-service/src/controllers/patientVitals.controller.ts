@@ -5,8 +5,8 @@ import { patientVitalsService } from "../services/patientVitals.service";
 // ADD VITALS
 export const addVitals: any = asyncHandler(async (req: Request, res: Response) => {
   try {
-    const patientId = parseInt(req.params.patientId);
-    const vitals = await patientVitalsService.addVitals(patientId, req.body);
+    // const patientId = parseInt(req.params.patientId);
+    const vitals = await patientVitalsService.addVitals(req.body.patientId, req.body);
     res.status(201).json({
       success: true,
       message: "Vitals recorded successfully",
