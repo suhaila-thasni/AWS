@@ -301,7 +301,6 @@
 // });
 
 
-
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Patient from "../models/patient.model";
@@ -408,6 +407,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       }
 
       await PatientVitals.create({
+        prescriptionId: prescription.id,
         patientId: patientId,
         temperature, pulse, respiratoryRate, spo2,
         height, weight, waist, bmi, bsa
@@ -558,7 +558,7 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
   const { id } = req.params;
   const updatePayload = req.body;
 
-  const prescription = await Prescription.update(updatePayload, {
+  const prescription : any = await Prescription.update(updatePayload, {
     where: { id: id, isDelete: false },
     returning: true,
   });
@@ -577,6 +577,7 @@ export const updateData: any = asyncHandler(async (req: Request, res: Response) 
       }
 
       await PatientVitals.create({
+        prescriptionId: prescription.id,
         patientId,
         temperature, pulse, respiratoryRate, spo2,
         height, weight, waist, bmi, bsa
@@ -648,6 +649,7 @@ export const deletePrescription: any = asyncHandler(async (req: Request, res: Re
     message: "Prescription deleted successfully",
   });
 });
+
 
 
 
