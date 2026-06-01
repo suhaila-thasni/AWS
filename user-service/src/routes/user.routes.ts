@@ -97,7 +97,7 @@ router.post("/vitals",  addVitals);
 router.get("/vitals", authenticate, checkPermission("vitals", "view"),getLatestVitals);
 router.get("/vitals/:id", authenticate, checkPermission("vitals", "view"), getVitalsById);
 router.put("/vitals/:id", authenticate, checkPermission("vitals", "edit"), updateVitals);
-router.get("/vitals/patient/:id",  getVitalsByPatient);
+router.get("/vitals/patient/:patientId",  getVitalsByPatient);
 router.delete("/vitals/:id", authenticate, checkPermission("vitals", "delete"), deleteVitals);
 
 
