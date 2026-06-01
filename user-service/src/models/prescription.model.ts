@@ -39,6 +39,8 @@ interface IPrescription {
   next_consultation?: Date;
 
   empty_stomach?: boolean;
+  date?: Date; 
+  prescribedBy: string;
 
   deleteDate?: Date;
   isActive?: boolean;
@@ -96,10 +98,12 @@ class Prescription
   public next_consultation?: Date;
 
   public empty_stomach?: boolean;
+  public date?: Date;
 
   public deleteDate?: Date;
   public isActive?: boolean;
   public isDelete?: boolean;
+  public prescribedBy: string;
 
 } 
 
@@ -117,6 +121,11 @@ Prescription.init(
 
     bookingId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+
+    prescribedBy: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
 
@@ -168,6 +177,10 @@ Prescription.init(
     empty_stomach: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+
+      date: {
+      type: DataTypes.DATE,
     },
     
     deleteDate: {
