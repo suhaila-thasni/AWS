@@ -191,12 +191,30 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
 
   setRefreshTokenCookie(res, refreshToken);
 
+  
+ const authPermission = await axios.get(
+  `${process.env.ROLE_SERVICE_URL}/rolepermission`,
+  {
+    params: {
+      roleId: hospital.roleId,
+      hospitalId: hospital.id
+    }
+  }
+);
+
+console.log(authPermission, "hiiiii");
+
+   
+
   res.status(200).json({
     success: true,
     message: "Logged in successfully",
     status: 200,
     token, // Return token for API Gateway forwarding
     data: safeHospital,
+    error: null,
+    authDefaultPermission: 1,
+    authPermission,
     error: null,
   });
 });
