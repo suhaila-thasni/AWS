@@ -2,25 +2,133 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // ❌ REMOVE OLD UNIQUE CONSTRAINTS (IMPORTANT)
-    await queryInterface.sequelize.query(`
-      ALTER TABLE doctor DROP CONSTRAINT IF EXISTS doctor_phone_key;
-    `);
+    await queryInterface.createTable("doctor", {
+      id: {
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
 
-    await queryInterface.sequelize.query(`
-      ALTER TABLE doctor DROP CONSTRAINT IF EXISTS doctor_email_key;
-    `);
+      hospitalId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
 
-    // Also try index fallback (safe)
-    await queryInterface.removeIndex("doctor", "doctor_phone").catch(() => {});
-    await queryInterface.removeIndex("doctor", "doctor_email").catch(() => {});
+      firstName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
 
-    // ✅ ADD NEW COMPOSITE UNIQUE INDEX
+      lastName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+
+      displayName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+
+      hospitalName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+
+      department: Sequelize.STRING,
+      specialist: Sequelize.STRING,
+      qualification: Sequelize.STRING,
+
+      regNo: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+
+      autoDecline: Sequelize.INTEGER,
+      appointmentCount: Sequelize.INTEGER,
+
+      phone: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      fcmToken: Sequelize.STRING,
+      imageUrl: Sequelize.STRING,
+      password: Sequelize.STRING,
+      experience: Sequelize.STRING,
+
+      fees: Sequelize.DECIMAL(10, 2),
+      gender: Sequelize.STRING,
+      dob: Sequelize.DATE,
+
+      knowLanguages: {
+        type: Sequelize.ARRAY(Sequelize.STRING),
+      },
+
+      address: {
+        type: Sequelize.JSONB,
+        allowNull: false,
+      },
+
+      consultingTwo: Sequelize.JSONB,
+      consultingOne: Sequelize.JSONB,
+      outDoorConsulting: Sequelize.JSON,
+
+      bookingOpen: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+
+      joiningDate: Sequelize.DATE,
+
+      todayBookingAcceptCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+
+      roleId: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+      },
+
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+
+      isDelete: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+
+      deleteDate: Sequelize.DATE,
+      otp: Sequelize.STRING,
+      otpExpiry: Sequelize.DATE,
+
+      createdAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn("NOW"),
+      },
+
+      updatedAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn("NOW"),
+      },
+    });
+
+    // ✅ ONLY ONE UNIQUE RULE (CORRECT ONE)
     await queryInterface.addIndex("doctor", ["hospitalId", "phone"], {
       unique: true,
       name: "doctor_hospital_phone_unique",
     });
 
+    // optional (only if you really want email unique per hospital)
     await queryInterface.addIndex("doctor", ["hospitalId", "email"], {
       unique: true,
       name: "doctor_hospital_email_unique",
@@ -28,14 +136,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeIndex(
-      "doctor",
-      "doctor_hospital_phone_unique"
-    );
-
-    await queryInterface.removeIndex(
-      "doctor",
-      "doctor_hospital_email_unique"
-    );
+    await queryInterface.dropTable("doctor");
   },
 };
