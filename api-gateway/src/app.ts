@@ -132,41 +132,6 @@ app.use("/api/hospital/login", loginLimiter);
 
 
 
-app.post("/api/login", async (req, res) => {
-  const payload = req.body;
-
-  const services = [
-    `${process.env.HOSPITAL_SERVICE_URL}/hospital/login`,
-    `${process.env.DOCTOR_SERVICE_URL}/doctor/login`,
-    `${process.env.STAFF_SERVICE_URL}/staff/login`,
-  ];
-
-  for (const url of services) {
-    try {
-      const response = await axios.post(url, payload);
-
-      // IMPORTANT: check service success
-      if (response.data?.success) {
-        return res.status(200).json({
-          success: true,
-          roleDetected: url,
-          token: response.data.token,
-          data: response.data.data,
-        });
-      }
-    } catch (err) {
-      // ignore and try next service
-    }
-  }
-
-  return res.status(401).json({
-    success: false,
-    message: "Invalid credentials in all services",
-  });
-});
-
-
-
 /**
  * CORS
  */
