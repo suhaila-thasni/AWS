@@ -195,7 +195,6 @@ Doctor.init(
     phone: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: {
         notEmpty: true,
       },
@@ -207,7 +206,6 @@ Doctor.init(
 
     email: {
       type: DataTypes.STRING,
-      unique: true,
       allowNull: true,
       validate: {
         isEmail: true,
