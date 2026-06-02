@@ -179,6 +179,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
 });
 
 // LOGIN - POST /staff/login
+
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
   const { email, phone, password, fcmToken } = req.body;
 
@@ -256,16 +257,26 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
 
   setRefreshTokenCookie(res, refreshToken);
 
+let authPermission = [];
 
- const authPermission = await axios.get(
-  `${process.env.ROLE_SERVICE_URL}/rolepermission`,
-  {
-    params: {
-      roleId: staff.roleId,
-      hospitalId: staff.hospitalId
-    }
+if (staff.roleId) {
+  try {
+    const res = await axios.get(
+      `${process.env.ROLE_SERVICE_URL}/rolepermission`,
+      {
+        params: {
+          roleId: staff.roleId,
+          hospitalId: staff.hospitalId,
+        },
+      }
+    );
+
+    authPermission = res.data;
+  } catch (err: any) {
+    console.error("Role service failed:", err.response?.status);
+    authPermission = [];
   }
-);
+}
 
 
   res.status(200).json({
