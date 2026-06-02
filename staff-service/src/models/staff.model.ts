@@ -38,6 +38,7 @@ interface IStaff {
   otpExpiry?: Date;
   roleId: number; 
   imageUrl: string;
+  fcmToken: string;
 }
 
 /* =======================
@@ -97,6 +98,7 @@ class Staff
   public otpExpiry?: Date;
   public roleId!: number;   
   public imageUrl: string;
+  public fcmToken: string;
 
   // timestamps
   public readonly createdAt!: Date;
@@ -225,6 +227,9 @@ Staff.init(
     },
     otpExpiry: {
       type: DataTypes.DATE,
+    },
+       fcmToken: {
+      type: DataTypes.STRING,
     },
    
   },
