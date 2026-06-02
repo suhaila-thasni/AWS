@@ -317,16 +317,17 @@ Doctor.init(
       },
     },
 
-    indexes: [
-      {
-        unique: true,
-        fields: ["phone"],
-      },
-      {
-        unique: true,
-        fields: ["email"],
-      },
-    ],
+     indexes: [
+  {
+    unique: true,
+    fields: ["hospitalId", "phone"],
+  },
+  {
+    unique: true,
+    fields: ["hospitalId", "email"],
+  },
+],
+
   }
 );
 
