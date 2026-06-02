@@ -122,6 +122,7 @@ export const Registeration: any = asyncHandler(async (req: Request, res: Respons
 // LOGIN - POST /hospital/login
 export const login: any = asyncHandler(async (req: Request, res: Response) => {
   const { email, phone, password, fcmToken } = req.body;
+  
 
   if ((!email && !phone) || !password) {
     res.status(400).json({
@@ -130,6 +131,7 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
     });
     return;
   }
+
 
   // Find hospital by email OR phone
   const hospital = await Hospital.scope("withPassword").findOne({
@@ -142,6 +144,8 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
+
+
   if (!hospital) {
     res.status(401).json({
       success: false,
@@ -152,7 +156,8 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
     return;
   }
 
-    if (fcmToken) {
+  
+  if (fcmToken) {
   await Hospital.update(
     { fcmToken },
     {
@@ -162,7 +167,6 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
     }
   );
 }
-
 
   const checkPassword = await bcrypt.compare(password, hospital.password || "");
   if (!checkPassword) {
@@ -191,32 +195,30 @@ export const login: any = asyncHandler(async (req: Request, res: Response) => {
 
   setRefreshTokenCookie(res, refreshToken);
 
-  
- const authPermission = await axios.get(
+
+  const authPermissionRes = await axios.get(
   `${process.env.ROLE_SERVICE_URL}/rolepermission`,
   {
     params: {
       roleId: hospital.roleId,
-      hospitalId: hospital.id
-    }
+    },
   }
 );
 
-console.log(authPermission, "hiiiii");
+const authPermission = authPermissionRes.data;
 
-   
 
-  res.status(200).json({
-    success: true,
-    message: "Logged in successfully",
-    status: 200,
-    token, // Return token for API Gateway forwarding
-    data: safeHospital,
-    error: null,
-    authDefaultPermission: 1,
-    authPermission,
-    error: null,
-  });
+res.status(200).json({
+  success: true,
+  message: "Logged in successfully",
+  status: 200,
+  token,
+  data: safeHospital,
+  error: null,
+  authDefaultPermission: 1,
+  authPermission, 
+});
+
 });
 
 // LOGIN WITH PHONE (OTP REQUEST) - POST /hospital/login/phone
@@ -972,6 +974,7 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
  export const roleBaseLogin : any = asyncHandler (async (req: Request, res: Response): Promise<void> => {
   
   const payload = req.body;
+  
 
   const services = [
     `${process.env.HOSPITAL_SERVICE_URL}/hospital/login`,
@@ -979,11 +982,12 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
     `${process.env.STAFF_SERVICE_URL}/staff/login`,
   ];
 
+
   for (const url of services) {
     try {
       const response = await axios.post(url, payload);
-            console.log(response, "iioioioiojiojiojiojiojio");
 
+      
 
       // IMPORTANT: check service success
       if (response.data?.success) {
@@ -992,6 +996,9 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
           roleDetected: url,
           token: response.data.token,
           data: response.data.data,
+           error: null,
+           authDefaultPermission: 1,
+           authPermission: response.data.authPermission
         });
         return;
       }
@@ -1000,15 +1007,9 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  res.status(401).json({
+  res.status(404).json({
     success: false,
-    message: "Invalid credentials in all services",
+    message: "User not found",
   });
   return;
 });
-
-
-
-
-
-
