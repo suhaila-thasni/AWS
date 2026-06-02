@@ -1,93 +1,3 @@
-// import express, { Request, Response } from "express";
-// import cors from "cors";
-// import helmet from "helmet";
-// import rateLimit from "express-rate-limit";
-// import routes from "./routes";
-// import { createProxyMiddleware } from "http-proxy-middleware";
-// import { errorHandler } from "./middleware/error.middleware";
-// import { env } from "./config/env";
-// import { requestLogger } from "./middleware/logger.middleware";
-
-// const app = express();
-
-// // Security middleware
-// app.use(helmet({
-//     crossOriginResourcePolicy: { policy: "cross-origin" }
-// }));
-
-// // Request Tracking & Logging
-// app.use(requestLogger);
-
-// // Rate limiting
-// const limiter = rateLimit({
-//     windowMs: 15 * 60 * 1000, // 15 minutes
-//     max: 1000, // Reduced from 1000 to production-typical 100
-//     message: {
-//         success: false,
-//         message: "Too many requests from this IP, please try again later.",
-//         error: { code: "RATE_LIMIT_EXCEEDED", details: null }
-//     }
-// });
-// app.use(limiter);
-
-// // Specific limit for login attempt through gateway
-// const loginLimiter = rateLimit({
-//     windowMs: 15 * 60 * 1000,
-//     max: 5,
-//     message: "Too many login attempts, please try again after 15 minutes."
-// });
-// app.use("/api/users/login", loginLimiter);
-// app.use("/api/ambulance/login", loginLimiter);
-// app.use("/api/doctor/login", loginLimiter);
-// app.use("/api/staff/login", loginLimiter);
-
-
-
-// // CORS
-// app.use(cors({
-//     origin: "*",
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true,
-// }));
-
-// app.use(express.json({ limit: "10mb" }));
-
-// // Health check endpoint
-// app.get("/health", (req: Request, res: Response) => {
-//     res.status(200).json({
-//         status: "healthy",
-//         service: "api-gateway",
-//         timestamp: new Date().toISOString(),
-//         uptime: process.uptime(),
-//         environment: env.NODE_ENV
-//     });
-// });
-
-// // Socket.IO Proxy (Must be before general routes)
-// export const socketProxy = createProxyMiddleware({
-//     target: env.SOCKETIO_SERVICE_URL,
-//     ws: true, // Enable WebSocket proxying
-//     changeOrigin: true
-// });
-
-// app.use("/socket.io", socketProxy);
-
-// // Routes
-// app.use("/api", routes);
-
-// // Error Handling
-// app.use(errorHandler);
-
-// export default app;
-
-
-
-
-
-
-
-
-
 
 
 import express, { Request, Response } from "express";
@@ -100,6 +10,9 @@ import routes from "./routes";
 import { errorHandler } from "./middleware/error.middleware";
 import { env } from "./config/env";
 import { requestLogger } from "./middleware/logger.middleware";
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 
@@ -215,6 +128,44 @@ app.use("/api/doctor/login", loginLimiter);
 app.use("/api/staff/login", loginLimiter);
 
 app.use("/api/hospital/login", loginLimiter);
+
+
+
+
+app.post("/api/login", async (req, res) => {
+  const payload = req.body;
+
+  const services = [
+    `${process.env.HOSPITAL_SERVICE_URL}/hospital/login`,
+    `${process.env.DOCTOR_SERVICE_URL}/doctor/login`,
+    `${process.env.STAFF_SERVICE_URL}/staff/login`,
+  ];
+
+  for (const url of services) {
+    try {
+      const response = await axios.post(url, payload);
+
+      // IMPORTANT: check service success
+      if (response.data?.success) {
+        return res.status(200).json({
+          success: true,
+          roleDetected: url,
+          token: response.data.token,
+          data: response.data.data,
+        });
+      }
+    } catch (err) {
+      // ignore and try next service
+    }
+  }
+
+  return res.status(401).json({
+    success: false,
+    message: "Invalid credentials in all services",
+  });
+});
+
+
 
 /**
  * CORS
