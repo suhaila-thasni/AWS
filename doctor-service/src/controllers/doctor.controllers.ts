@@ -934,16 +934,23 @@ export const Registeration: any = asyncHandler(
     }
 
     const numericPhone = phone.replace(/\D/g, "").slice(-10);
-    const exist = await Doctor.findOne({ where: { phone: numericPhone } });
-    if (exist) {
-      res.status(404).json({
-        success: false,
-        message: "Doctor is already exist",
-        data: null,
-        error: { code: "DOCTOR_ALREADY_EXISTS", details: null },
-      });
-      return;
-    }
+
+           const exist = await Doctor.findOne({
+  where: {
+    phone: numericPhone,
+    hospitalId: hospitalId,
+  },
+});
+
+if (exist) {
+  res.status(409).json({
+    success: false,
+    message: "Doctor already exists in this hospital",
+    data: null,
+    error: { code: "DOCTOR_ALREADY_EXISTS", details: null },
+  });
+  return;
+}
 
     const newDoctor = await Doctor.create({
       firstName,
