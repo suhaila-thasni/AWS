@@ -964,6 +964,8 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
   for (const url of services) {
     try {
       const response = await axios.post(url, payload);
+            console.log(response, "iioioioiojiojiojiojiojio");
+
 
       // IMPORTANT: check service success
       if (response.data?.success) {
