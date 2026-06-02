@@ -126,7 +126,7 @@ Prescription.init(
 
     prescribedBy: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
 
     userId: {
