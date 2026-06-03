@@ -10,6 +10,9 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
       },
+       fcmToken: {
+        type: Sequelize.STRING,
+      },
 
       hospitalId: {
         type: Sequelize.INTEGER,
