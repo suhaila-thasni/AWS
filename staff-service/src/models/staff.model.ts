@@ -39,6 +39,8 @@ interface IStaff {
   roleId: number; 
   imageUrl: string;
   hospitalName: string;
+  fcmToken: string;
+
 }
 
 /* =======================
@@ -99,6 +101,7 @@ class Staff
   public roleId!: number;   
   public imageUrl: string;
   public hospitalName: string;
+  public fcmToken: string;
 
   // timestamps
   public readonly createdAt!: Date;
@@ -218,6 +221,10 @@ Staff.init(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+       fcmToken: {
+      type: DataTypes.STRING,
+    },
+
 
     isDelete: {
       type: DataTypes.BOOLEAN,
