@@ -12,6 +12,12 @@ const startServer = async () => {
     try {
         await connectDB();
         await connectRabbitMQ();
+
+        const { default: Speciality } = await import("./models/speciality.model");
+        const { default: Category } = await import("./models/category.model");
+
+        await Speciality.sync({ alter: true });
+        await Category.sync({ alter: true });
         
         // Starting Speciality Service
         const server = app.listen(PORT, () => {
