@@ -29,7 +29,7 @@ export const proxyRequest = async (req: Request, res: Response) => {
   try {
     const options = {
         method: req.method as any,
-        url: `${SERVICES.ADS_SERVICE}${req.originalUrl.replace("/api", "")}`,
+        url: `${SERVICES.ADS_SERVICE}${req.originalUrl.replace("/api/ad", "/ad")}`,
         data: req.body,
         headers: {
             ...(() => {
