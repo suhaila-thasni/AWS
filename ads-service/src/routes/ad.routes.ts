@@ -11,10 +11,10 @@ import { checkPermission } from "../middleware/role.middleware";
 
 const router = Router();
 
-router.post("/ad",  createAd);
-router.get("/ad",  getAds);
-router.get("/ad/:id", authenticate, checkPermission("ad", "view"), getSingleAd);
-router.put("/ad/:id",  updateAd);
-router.delete("/ad/:id", authenticate, checkPermission("ad", "delete"), deleteAd);
+router.post("/ads",  createAd);
+router.get("/ads",  getAds);
+router.get("/ads/:id", authenticate, checkPermission("ad", "view"), getSingleAd);
+router.put("/ads/:id",  updateAd);
+router.delete("/ads/:id", authenticate, checkPermission("ad", "delete"), deleteAd);
 
 export default router;
