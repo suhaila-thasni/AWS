@@ -1000,6 +1000,7 @@ if (exist) {
 export const login: any = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const { email, phone, password, fcmToken, hospitalId } = req.body;
+    
 
     if ((!email && !phone) || !password) {
       res.status(400).json({
@@ -1055,6 +1056,7 @@ export const login: any = asyncHandler(
     }
 
     if (matchedDoctors.length > 1 && !hospitalId) {
+      
       res.status(200).json({
         success: true,
 
@@ -1115,23 +1117,41 @@ export const login: any = asyncHandler(
       ...safeDoctor
     } = doctor.get();
 
-    const authPermission = await axios.get(
+
+
+let authPermission = [];
+
+if (doctor.roleId) {
+  try {
+    const res = await axios.get(
       `${process.env.ROLE_SERVICE_URL}/rolepermission`,
       {
         params: {
           roleId: doctor.roleId,
           hospitalId: doctor.hospitalId,
         },
-      },
+      }
     );
 
+    authPermission = res.data;
+  } catch (err: any) {
+    console.error("Role service failed:", err.response?.status);
+    authPermission = [];
+  }
+}
+
+
     res.status(200).json({
-      success: true,
-      message: "Logged in successfully",
-      token,
-      permission: authPermission.data,
-      data: safeDoctor,
-    });
+  success: true,
+  message: "Logged in successfully",
+  status: 200,
+  token,
+  data: safeDoctor,
+  error: null,
+  authDefaultPermission: 1,
+  authPermission, 
+});
+
   },
 );
 
