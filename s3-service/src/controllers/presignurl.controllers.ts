@@ -46,6 +46,22 @@ const SERVICE_CONFIG: Record<
     baseUrl: process.env.AD_SERVICE_URL,
     endpoint: "ad",
   },
+   speciality: {
+    baseUrl: process.env.SPECIALITY_SERVICE_URL,
+    endpoint: "speciality",
+  },
+    documents: {
+    baseUrl: process.env.USER_SERVICE_URL,
+    endpoint: "documents",
+  },
+    category: {
+    baseUrl: process.env.SPECIALITY_SERVICE_URL,
+    endpoint: "category",
+  },
+    userLabresult: {
+    baseUrl: process.env.USER_SERVICE_URL,
+    endpoint: "lab-results",
+  },
 };
 
 /* -------------------------------------------------------------------------- */
