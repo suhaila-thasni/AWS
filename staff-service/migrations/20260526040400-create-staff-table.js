@@ -26,6 +26,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      
+      hospitalName: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
 
       designation: {
         type: Sequelize.STRING,
