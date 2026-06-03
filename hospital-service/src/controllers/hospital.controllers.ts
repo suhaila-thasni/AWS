@@ -998,7 +998,8 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
           data: response.data.data,
            error: null,
            authDefaultPermission: 1,
-           authPermission: response.data.authPermission
+           authPermission: response.data.authPermission,
+           hospitals: response.data.hospitals
         });
         return;
       }
