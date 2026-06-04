@@ -54,23 +54,38 @@ export const patientVitalsService = {
   /**
    * Get latest vitals for a patient
    */
-  async getLatestVitals(patientId: number) {
-    const patient = await Patient.findByPk(patientId);
-    if (!patient) {
-      throw { status: 404, message: "Patient not found" };
-    }
+ async getLatestVitals(patientId: number, hospitalId: number) {
+  if (!patientId) {
+    throw { status: 400, message: "patientId is required" };
+  }
 
-    const vitals = await PatientVitals.findOne({
-      where: { patientId },
-      order: [["createdAt", "DESC"]],
-    });
+  // 1. Validate patient exists
+  const patient = await Patient.findOne({
+    where: {
+      id: patientId,
+      ...(hospitalId && { hospitalId }),
+    },
+  });
 
-    if (!vitals) {
-      throw { status: 404, message: "No vitals recorded for this patient" };
-    }
+  if (!patient) {
+    throw { status: 404, message: "Patient not found" };
+  }
 
-    return vitals;
-  },
+  // 2. Get latest vitals
+  const vitals = await PatientVitals.findOne({
+    where: {
+      patientId,
+      ...(hospitalId && { hospitalId }),
+    },
+    order: [["createdAt", "DESC"]],
+  });
+
+  if (!vitals) {
+    throw { status: 404, message: "No vitals recorded for this patient" };
+  }
+
+  return vitals;
+},
 
   /**
    * Get a single vitals record by ID
