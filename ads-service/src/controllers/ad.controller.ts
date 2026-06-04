@@ -14,7 +14,8 @@ export const createAd = async (req: Request, res: Response): Promise<any> => {
 
       const  hospital = await axios.get(`${process.env.HOSPIT}/hospital/${hospitalId}`)
 
-
+    console.log(hospital, "ertyui6578");
+    
       if(!hospital){
               return res.status(404).json({ message: "Not found" });
 
@@ -24,6 +25,8 @@ export const createAd = async (req: Request, res: Response): Promise<any> => {
     const ad = await Ad.create({
       imageUrl, startDate, endDate, kilometer, hospitalId,  latitude: hospital?.data?.data?.latitude, longitude: hospital?.data?.data?.longitude,
     } as any);
+
+    console.log("hiiiiii");
 
     return res.status(201).json({
       message: "Ad created",
