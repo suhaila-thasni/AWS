@@ -54,7 +54,8 @@ export const patientVitalsService = {
   /**
    * Get latest vitals for a patient
    */
- async getLatestVitals(patientId: number, hospitalId: number) {
+
+   async getLatestVitals(patientId: number, hospitalId: number, prescriptionId: number) {
   if (!patientId) {
     throw { status: 400, message: "patientId is required" };
   }
@@ -75,6 +76,7 @@ export const patientVitalsService = {
   const vitals = await PatientVitals.findOne({
     where: {
       patientId,
+      prescriptionId,
       ...(hospitalId && { hospitalId }),
     },
     order: [["createdAt", "DESC"]],
