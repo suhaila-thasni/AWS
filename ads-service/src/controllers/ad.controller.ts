@@ -9,6 +9,8 @@ dotenv.config();
 // ✅ Create Donor
 export const createAd = async (req: Request, res: Response): Promise<any> => {
   try {
+
+    console.log(req.body, "iioioio");
     const { startDate, endDate, kilometer, hospitalId } = req.body;
 
       const  hospital = await axios.get(`${process.env.HOSPIT}/hospital/${hospitalId}`)
