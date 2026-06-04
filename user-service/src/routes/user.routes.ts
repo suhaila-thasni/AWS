@@ -129,11 +129,11 @@ router.put("/documents/:id", authenticate, validateParams(idParamSchema), checkP
 router.delete("/documents/:id", authenticate, validateParams(idParamSchema), checkPermission("document", "delete"), deleteDocument);
 
 router.post("/vitals",  addVitals);
-router.get("/vitals", authenticate, checkPermission("vitals", "view"),getLatestVitals);
-router.get("/vitals/:id", authenticate, checkPermission("vitals", "view"), getVitalsById);
-router.put("/vitals/:id", authenticate, checkPermission("vitals", "edit"), updateVitals);
+router.get("/vitals", authenticate, getLatestVitals);
+router.get("/vitals/:id", authenticate,  getVitalsById);
+router.put("/vitals/:id", authenticate,  updateVitals);
 router.get("/vitals/patient/:patientId",  getVitalsByPatient);
-router.delete("/vitals/:id", authenticate, checkPermission("vitals", "delete"), deleteVitals);
+router.delete("/vitals/:id", authenticate,  deleteVitals);
 
 
 
