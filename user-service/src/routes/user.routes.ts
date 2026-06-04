@@ -86,7 +86,7 @@ router.post("/users/logout", authenticate,logout);
 
 router.get("/users",   getUsers);
 router.get("/users/blacklist", authenticate, checkPermission("users", "view"), getBlacklistedUsers);
-router.get("/users/:id", authenticate, validateParams(idParamSchema), checkPermission("users", "view"), getUser);
+router.get("/users/:id",  validateParams(idParamSchema),  getUser);
 router.put("/users/:id", authenticate, validateParams(idParamSchema), validate(updateUserSchema), checkPermission("users", "edit"), updateUser);
 router.delete("/users/:id", authenticate, validateParams(idParamSchema), checkPermission("users", "delete"), deleteUser);
 
@@ -99,7 +99,7 @@ router.delete("/users/:id", authenticate, validateParams(idParamSchema), checkPe
 router.post("/patients", createPatient);
 router.get("/patients", getPatients);
 router.get("/patients/blacklist", authenticate, checkPermission("patient", "view"), getBlacklistedPatients);
-router.get("/patients/:id", authenticate, checkPermission("patient", "view"), validateParams(idParamSchema), getPatient);
+router.get("/patients/:id",  validateParams(idParamSchema), getPatient);
 router.put("/patients/:id", authenticate, checkPermission("patient", "edit"), validateParams(idParamSchema), updatePatient);
 router.delete("/patients/:id", authenticate, checkPermission("patient", "delete"), validateParams(idParamSchema), deletePatient);
 
