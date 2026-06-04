@@ -7,14 +7,12 @@ export const checkPermission =
   async (req: any, res: any, next: any) => {
 
     try {
-
-      const roleId = req.user.roleId;
-      console.log(roleId,"role");
       
+      const roleId = req.user.roleId;    
       
-
+   
       const response = await axios.post(
-        `${process.env.ROLE_API_URL}/check-permission`,
+        `${process.env.ROLE_SERVICE_URL}/check-permission`,
         {
           roleId,
           module,
