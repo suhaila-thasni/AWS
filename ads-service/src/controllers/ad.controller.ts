@@ -20,15 +20,21 @@ export const createAd = async (req: Request, res: Response): Promise<any> => {
 
       }
 
+    console.log(hospital, "hospitals");
+
     const ad = await Ad.create({
        startDate, endDate, kilometer, hospitalId,  latitude: hospital?.data?.data?.latitude, longitude: hospital?.data?.data?.longitude,
     } as any);
+
+    console.log(ad, "hleoooo");
 
 
     return res.status(201).json({
       message: "Ad created",
       ad,
     });
+
+    
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
