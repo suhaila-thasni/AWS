@@ -8,6 +8,7 @@ import { httpClient } from "../utils/httpClient";
 import dotenv from "dotenv";
 import PatientVitals from "../models/patientVitals.model";
 import { Op, Sequelize } from "sequelize";
+import axios from "axios";
 dotenv.config();
 
 
@@ -33,12 +34,13 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
+       const booking = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`);
     
     if (user) {
       patientExists = await Patient.create({
         userId: user.id,
         hospitalId: hospitalId,
-        name: user.name,
+        name: booking?.data?.patient_name,
         gender: "Other",
         age: 0,
         dob: new Date(),
