@@ -13,7 +13,7 @@ export const createAd = async (req: Request, res: Response): Promise<any> => {
     console.log(req.body, "iioioio");
     const { startDate, endDate, kilometer, hospitalId } = req.body;
 
-      const  hospital = await axios.get(`${process.env.HOSPIT}/hospital/${hospitalId}`)
+    const  hospital = await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`)
 
       if(!hospital){
               return res.status(404).json({ message: "Not found" });
