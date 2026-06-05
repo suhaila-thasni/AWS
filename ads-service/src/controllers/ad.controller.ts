@@ -10,23 +10,18 @@ dotenv.config();
 export const createAd = async (req: Request, res: Response): Promise<any> => {
   try {
 
-    console.log(req.body, "iioioio");
     const { startDate, endDate, kilometer, hospitalId } = req.body;
 
     const  hospital = await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`)
 
       if(!hospital){
               return res.status(404).json({ message: "Not found" });
-
       }
 
-    console.log(hospital, "hospitals");
 
     const ad = await Ad.create({
        startDate, endDate, kilometer, hospitalId,  latitude: hospital?.data?.data?.latitude, longitude: hospital?.data?.data?.longitude,
     } as any);
-
-    console.log(ad, "hleoooo");
 
 
     return res.status(201).json({
