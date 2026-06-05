@@ -335,7 +335,6 @@ export const createPatient: any = asyncHandler(async (req: Request, res: Respons
 
 // GET ALL PATIENTS
 
-
 export const getPatients = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   let {
     name,
@@ -345,6 +344,7 @@ export const getPatients = asyncHandler(async (req: Request, res: Response): Pro
     hospitalId,
     email,
     guardianName,
+    userId,
     page = 1,
     limit = 10,
     search_query,
@@ -363,6 +363,7 @@ export const getPatients = asyncHandler(async (req: Request, res: Response): Pro
   page = extract(page);
   limit = extract(limit);
   search_query = extract(search_query);
+  userId = extract(userId);
 
   const pageNum = Number(page);
   const limitNum = Number(limit);
@@ -380,6 +381,10 @@ export const getPatients = asyncHandler(async (req: Request, res: Response): Pro
 
   if (hospitalId !== undefined) {
     whereCondition.hospitalId = Number(hospitalId);
+  }
+
+   if (userId !== undefined) {
+    whereCondition.userId = Number(userId);
   }
 
   if (phone) {
@@ -448,6 +453,7 @@ export const getPatients = asyncHandler(async (req: Request, res: Response): Pro
   });
    return;
 });
+
 
 
 // GET BLACKLISTED PATIENTS
