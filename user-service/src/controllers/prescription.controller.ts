@@ -38,6 +38,8 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   if (!patientExists && userId) {
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
        const booking = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`);
+
+   console.log(booking, "boioking");
     
     if (user) {
       patientExists = await Patient.create({
