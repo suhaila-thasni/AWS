@@ -43,15 +43,15 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     
     if (user) {
       patientExists = await Patient.create({
-        userId: user.id,
+         userId: user.id,
         hospitalId: hospitalId,
         name: booking?.data?.patient_name,
-        gender: "Other",
-        age: 0,
-        dob: new Date(),
-        mobileNumber: user.phone || "N/A",
-        addressLine: "N/A",
-        location: { place: "N/A", pincode: 0 },
+        gender: booking?.data?.patient_gender,
+        age: booking?.data?.patient_age,
+        dob: booking?.data?.patient_dob,
+        mobileNumber:  booking?.data?.patient_phone,
+        addressLine: booking?.data?.patient_place,
+        location: { place: booking?.data?.patient_place, pincode: 0 },
       });
       finalPatientId = patientExists.id;
     } else {
