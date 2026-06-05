@@ -22,8 +22,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     } = req.body;
 
 
- console.log(req.body, "hello");
-
   const errors: string[] = [];
 
   // 1. Validate / Auto-Create Patient
@@ -37,9 +35,11 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
-       const booking = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`);
+   
+     const booking = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
+      headers: { Authorization: req.headers.authorization }
+    });
 
-   console.log(booking, "boioking");
     
     if (user) {
       patientExists = await Patient.create({
