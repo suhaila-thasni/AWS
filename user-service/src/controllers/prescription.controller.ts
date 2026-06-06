@@ -8,11 +8,11 @@ import { httpClient } from "../utils/httpClient";
 import dotenv from "dotenv";
 import PatientVitals from "../models/patientVitals.model";
 import { Op, Sequelize } from "sequelize";
-import axios from "axios";
 dotenv.config();
 
 
 // REGISTER
+
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
  
   const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy  } = req.body;
@@ -28,34 +28,42 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   let finalPatientId = patientId;
   let patientExists = null;
 
+  
+
   if (finalPatientId) {
     patientExists = await Patient.findOne({ where: { id: finalPatientId, isDelete: false } });
+    
   }
+  
 
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
+    
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
-   
-   //   const booking = await httpClient.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
-   //    headers: { Authorization: req.headers.authorization }
-   //  });
 
-   // console.log(booking, "booking");
+    const booking = await httpClient.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
+      headers: { Authorization: req.headers.authorization }
+    });
 
+    
     
     if (user) {
       patientExists = await Patient.create({
-         userId: user.id,
+        userId: user.id,
         hospitalId: hospitalId,
-        // name: booking?.data?.patient_name,
-        // gender: booking?.data?.patient_gender,
-        // age: booking?.data?.patient_age,
-        // dob: booking?.data?.patient_dob,
-        // mobileNumber:  booking?.data?.patient_phone,
-        // addressLine: booking?.data?.patient_place,
-        location: { place: booking?.data?.patient_place, pincode: 0 },
+        name: booking?.data?.data?.patient_name,
+        gender: booking?.data?.data?.patient_gender,
+        age: booking?.data?.data?.patient_age,
+        dob: booking?.data?.data?.patient_dob,
+        mobileNumber:  booking?.data?.data?.patient_phone,
+        addressLine: booking?.data?.data?.patient_place,
+        location: { place: booking?.data?.data?.patient_place, pincode: 0 },
       });
+
+      
       finalPatientId = patientExists.id;
+
+      
     } else {
       errors.push(`User with ID ${userId} does not exist. Cannot auto-create patient.`);
     }
@@ -68,6 +76,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     await httpClient.get(`${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`, {
       headers: { Authorization: req.headers.authorization }
     });
+    
   } catch (error: any) {
     console.error("Doctor validation failed:", error.message);
     errors.push(`Doctor with ID ${doctorId} does not exist or is unreachable.`);
@@ -78,6 +87,8 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     await httpClient.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
       headers: { Authorization: req.headers.authorization }
     });
+
+    
   } catch (error: any) {
     console.error("Hospital validation failed:", error.message);
     errors.push(`Hospital with ID ${hospitalId} does not exist or is unreachable.`);
@@ -100,7 +111,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy 
   });
 
- console.log(prescription, "prescription");
+ 
 
      // 4. If any vitals field is provided, create a vitals record
     if (temperature || pulse || respiratoryRate || spo2 || height || weight || waist) {
@@ -114,15 +125,15 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
         bsa = parseFloat((0.007184 * Math.pow(height, 0.725) * Math.pow(weight, 0.425)).toFixed(4));
       }
 
+    
       await PatientVitals.create({
         prescriptionId: prescription.id,
-        patientId: patientId,
+        patientId:  patientExists?.id,
         temperature, pulse, respiratoryRate, spo2,
         height, weight, waist, bmi, bsa
       });
     }
 
- console.log("hiiiii");
 
   await publishEvent(
     "prescription_events",
@@ -137,13 +148,13 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     }
   );
 
-
   res.status(201).json({
     success: true,
     message: "Prescription created successfully",
     data: prescription,
   });
 });
+
 
 
 
