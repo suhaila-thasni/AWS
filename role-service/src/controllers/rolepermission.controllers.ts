@@ -243,6 +243,19 @@ export const rolepermissionAssgin = asyncHandler(
       return;
     }
 
+         // Check role exists
+    const role = await axios.get(
+      `${process.env.ROLE_SERVICE_URL}/role?hospitalId=${hospitalId}&doctorId=${roleId}`
+    );
+
+    if (!role?.data) {
+      res.status(404).json({
+        success: false,
+        message: "Role not found",
+      });
+      return;
+    }
+
     // Check hospital exists
     const hospital = await axios.get(
       `${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`
