@@ -901,6 +901,7 @@ export const Registeration: any = asyncHandler(
       appointmentCount,
       regNo,
       hospitalName,
+      roleId,
     } = req.body;
 
     if (!hospitalId) {
@@ -977,6 +978,7 @@ if (exist) {
       appointmentCount,
       regNo,
       hospitalName,
+      roleId,
     });
 
     await publishEvent("doctor_events", "DOCTOR_REGISTERED", {
