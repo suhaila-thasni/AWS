@@ -256,14 +256,6 @@ export const rolepermissionAssgin = asyncHandler(
     // Check hospital exists
     let hospital: any;
 
-    if (!hospital?.data) {
-      res.status(404).json({
-        success: false,
-        message: "Hospital not found",
-      });
-      return;
-    }
-
     try {
       hospital = await axios.get(
         `${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`,
