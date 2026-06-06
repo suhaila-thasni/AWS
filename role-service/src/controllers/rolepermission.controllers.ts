@@ -226,17 +226,14 @@ export const getRolepermission: any = asyncHandler(
 
 
 
+
 export const rolepermissionAssgin = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const {
       hospitalId,
       roleId,
-      userType,
-      doctorIds = [],
-      staffIds = [],
+      userType
     }: any = req.body; // Prefer body instead of query
-
-    console.log(req.body, "hiii");
 
     if (!hospitalId || !roleId || !userType) {
       res.status(400).json({
@@ -262,29 +259,28 @@ export const rolepermissionAssgin = asyncHandler(
     // =========================
     // DOCTOR ROLE ASSIGNMENT
     // =========================
+ 
     if (userType.toLowerCase() === "doctor") {
-  const selectedDoctorIds = Array.isArray(doctorIds)
-    ? doctorIds
-    : String(doctorIds).split(",");
+  const doctors = req.body.doctorIds || [];
 
-  for (const doctorId of selectedDoctorIds) {
+  for (const doctor of doctors) {
     try {
       const doctorResponse = await axios.get(
-        `${process.env.DOCTOR_SERVICE_URL}/doctor?hospitalId=${hospitalId}&doctorId=${doctorId}`
+        `${process.env.DOCTOR_SERVICE_URL}/doctor?hospitalId=${hospitalId}&doctorId=${doctor.id}`
       );
 
-      const doctor = doctorResponse?.data?.data;
+      const doctorData = doctorResponse?.data?.data;
 
-      if (doctor) {
+      if (doctorData) {
         await axios.put(
-          `${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`,
+          `${process.env.DOCTOR_SERVICE_URL}/doctor/${doctor.id}`,
           {
-            roleId,
+            roleId: doctor.roleId,
           }
         );
       }
     } catch (error) {
-      console.error(`Failed to update doctor ${doctorId}`, error);
+      console.error(`Failed to update doctor ${doctor.id}`, error);
     }
   }
 }
@@ -293,33 +289,30 @@ export const rolepermissionAssgin = asyncHandler(
     // STAFF ROLE ASSIGNMENT
     // =========================
 
-        if (userType.toLowerCase() === "staff") {
-  const selectedStaffIds = Array.isArray(staffIds)
-    ? staffIds
-    : String(staffIds).split(",");
+if (userType.toLowerCase() === "staff") {
+  const staffs = req.body.staffIds || [];
 
-  for (const staffId of selectedStaffIds) {
+  for (const staff of staffs) {
     try {
-      const staffsResponse = await axios.get(
-        `${process.env.STAFF_SERVICE_URL}/staff?hospitalId=${hospitalId}&staffId=${staffId}`
+      const staffResponse = await axios.get(
+        `${process.env.STAFF_SERVICE_URL}/staff?hospitalId=${hospitalId}&staffId=${staff.id}`
       );
 
-      const staff = staffsResponse?.data?.data;
+      const staffData = staffResponse?.data?.data;
 
-      if (staff) {
+      if (staffData) {
         await axios.put(
-          `${process.env.STAFF_SERVICE_URL}/staff/${staffId}`,
+          `${process.env.STAFF_SERVICE_URL}/staff/${staff.id}`,
           {
-            roleId,
+            roleId: staff.roleId,
           }
         );
       }
     } catch (error) {
-      console.error(`Failed to update staff ${staffId}`, error);
+      console.error(`Failed to update staff ${staff.id}`, error);
     }
   }
 }
-
 
     res.status(200).json({
       success: true,
@@ -327,6 +320,8 @@ export const rolepermissionAssgin = asyncHandler(
     });
   }
 );
+
+
 
 
 
