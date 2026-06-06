@@ -87,7 +87,7 @@ import { httpClient } from "../utils/httpClient";
 
 export const Registeration: any = asyncHandler(async (req: any, res: Response) => {
   
-  const { hospitalId, name, hospitalName, phone, email, password,  designation, joiningDate, jobType, staffType,  dob, gender, knowLanguages, qualification, address } = req.body;
+  const { hospitalId, name, hospitalName, phone, email, password,  designation, joiningDate, jobType, staffType,  dob, gender, knowLanguages, qualification, address, roleId } = req.body;
 
 
   if (!hospitalId) {
@@ -138,7 +138,7 @@ export const Registeration: any = asyncHandler(async (req: any, res: Response) =
     const newStaff = await Staff.create({
       hospitalId, name, phone, email, password, dob, gender, 
       knowLanguages, qualification, address, 
-      designation, joiningDate, jobType, staffType,hospitalName,
+      designation, joiningDate, jobType, staffType,hospitalName,roleId
     });
 
     await publishEvent("staff_events", "STAFF_REGISTERED", {
