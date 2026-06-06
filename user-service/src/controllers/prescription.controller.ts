@@ -21,7 +21,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
     } = req.body;
 
-    console.log(req.body, "hello")
 
   const errors: string[] = [];
 
@@ -29,21 +28,16 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   let finalPatientId = patientId;
   let patientExists = null;
 
-  console.log(finalPatientId, "hiiooioi");
   
 
   if (finalPatientId) {
     patientExists = await Patient.findOne({ where: { id: finalPatientId, isDelete: false } });
-    console.log(patientExists, "patientExists");
     
   }
-
-  console.log(patientExists, "ioioiioo patinent");
   
 
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
-    console.log("ooopop");
     
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
 
@@ -51,7 +45,15 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       headers: { Authorization: req.headers.authorization }
     });
 
-    console.log(booking, "booking");
+   if(!booking){
+     res.status(404).json({
+      success: false,
+      message: "Booking not found",
+      errors: errors
+    });
+    return;
+   }
+
     
     
     if (user) {
@@ -67,11 +69,9 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
         location: { place: booking?.data?.data?.patient_place, pincode: 0 },
       });
 
-      console.log(patientExists, "patientExists");
       
       finalPatientId = patientExists.id;
 
-      console.log("hiiiii ");
       
     } else {
       errors.push(`User with ID ${userId} does not exist. Cannot auto-create patient.`);
@@ -85,7 +85,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     await httpClient.get(`${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`, {
       headers: { Authorization: req.headers.authorization }
     });
-    console.log("doctror");
     
   } catch (error: any) {
     console.error("Doctor validation failed:", error.message);
@@ -98,7 +97,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       headers: { Authorization: req.headers.authorization }
     });
 
-    console.log("hospti");
     
   } catch (error: any) {
     console.error("Hospital validation failed:", error.message);
@@ -122,7 +120,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy 
   });
 
-  console.log(prescription, "prescrip");
   
 
 
@@ -163,8 +160,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     }
   );
 
-
-  console.log("success");
   
 
 
@@ -174,7 +169,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     data: prescription,
   });
 });
-
 
 
 
