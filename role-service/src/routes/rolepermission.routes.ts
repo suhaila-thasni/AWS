@@ -3,11 +3,12 @@ import {
 createRolepermission,
 getRolepermission,
 getanRolepermission,
+rolepermissionAssgin,
 rolepermissionDelete,
 updateData
  
 } from "../controllers/rolepermission.controllers";
-// import { authenticate } from "../middleware/authenticate";
+import { authenticate } from "../middleware/authenticate";
 
 const router = Router();
 
@@ -16,10 +17,11 @@ const router = Router();
 
 // CRUD
 
-router.post("/rolepermission",  createRolepermission);
+router.post("/rolepermission", createRolepermission);
 router.get("/rolepermission", getRolepermission);
-router.get("/rolepermission/:id",  getanRolepermission);
+router.get("/rolepermission/:id", getanRolepermission);
 router.put("/rolepermission/:id", updateData);
-router.delete("/rolepermission/:id",  rolepermissionDelete);
+router.delete("/rolepermission/:id", rolepermissionDelete);
+router.patch("/rolepermission", rolepermissionAssgin)
 
-export default router;
+export default router;  
