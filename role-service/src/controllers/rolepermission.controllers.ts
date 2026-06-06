@@ -236,6 +236,8 @@ export const rolepermissionAssgin = asyncHandler(
       staffIds = [],
     }: any = req.body; // Prefer body instead of query
 
+    console.log(req.body, "hiii");
+
     if (!hospitalId || !roleId || !userType) {
       res.status(400).json({
         success: false,
