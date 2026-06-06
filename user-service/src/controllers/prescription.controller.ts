@@ -13,7 +13,7 @@ dotenv.config();
 
 // REGISTER
 
-export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
+export const createPrescription: any = asyncHandler(async (req: Request, res: Response): Promise<void> => {
  
   const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy  } = req.body;
 
@@ -41,20 +41,28 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
 
-    const booking = await httpClient.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
+
+    let booking: any;
+
+try {
+  booking = await httpClient.get(
+    `${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,
+    {
       headers: { Authorization: req.headers.authorization }
-    });
+    }
+  );
+} catch (error: any) {
 
-   if(!booking){
-     res.status(404).json({
-      success: false,
-      message: "Booking not found",
-      errors: errors
-    });
-    return;
-   }
-
-    
+   res.status(error.response?.status || 500).json({
+    success: false,
+    message:
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      "Booking service error",
+    error: error.response?.data,
+  });
+  return;
+}
     
     if (user) {
       patientExists = await Patient.create({
@@ -121,8 +129,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   });
 
   
-
-
      // 4. If any vitals field is provided, create a vitals record
     if (temperature || pulse || respiratoryRate || spo2 || height || weight || waist) {
       // We'll calculate BMI/BSA here or let the service handle it.
@@ -136,8 +142,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       }
 
     
-      
-
       await PatientVitals.create({
         prescriptionId: prescription.id,
         patientId:  patientExists?.id,
@@ -160,8 +164,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     }
   );
 
-  
-
 
   res.status(201).json({
     success: true,
@@ -169,7 +171,6 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     data: prescription,
   });
 });
-
 
 
 // GET ALL USERS Prescription
