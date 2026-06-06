@@ -36,23 +36,23 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   if (!patientExists && userId) {
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
    
-     const booking = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
-      headers: { Authorization: req.headers.authorization }
-    });
+   //   const booking = await httpClient.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
+   //    headers: { Authorization: req.headers.authorization }
+   //  });
 
-   console.log(booking, "booking");
+   // console.log(booking, "booking");
 
     
     if (user) {
       patientExists = await Patient.create({
          userId: user.id,
         hospitalId: hospitalId,
-        name: booking?.data?.patient_name,
-        gender: booking?.data?.patient_gender,
-        age: booking?.data?.patient_age,
-        dob: booking?.data?.patient_dob,
-        mobileNumber:  booking?.data?.patient_phone,
-        addressLine: booking?.data?.patient_place,
+        // name: booking?.data?.patient_name,
+        // gender: booking?.data?.patient_gender,
+        // age: booking?.data?.patient_age,
+        // dob: booking?.data?.patient_dob,
+        // mobileNumber:  booking?.data?.patient_phone,
+        // addressLine: booking?.data?.patient_place,
         location: { place: booking?.data?.patient_place, pincode: 0 },
       });
       finalPatientId = patientExists.id;
