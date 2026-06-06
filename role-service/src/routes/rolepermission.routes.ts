@@ -8,7 +8,7 @@ rolepermissionDelete,
 updateData
  
 } from "../controllers/rolepermission.controllers";
-import { authenticate } from "../middleware/authenticate";
+// import { authenticate } from "../middleware/authenticate";
 
 const router = Router();
 
