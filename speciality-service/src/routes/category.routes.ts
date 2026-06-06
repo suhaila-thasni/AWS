@@ -16,7 +16,7 @@ const router = Router();
 // CRUD
 
 router.post("/category", Registeration);
-router.get("/category", authenticate, checkPermission("category", "view"), getCategorys);
+router.get("/category",  getCategorys);
 router.get("/category/:id",authenticate, checkPermission("category", "view"), getanCategory);
 router.put("/category/:id",authenticate, checkPermission("category", "edit"), updateData);
 router.delete("/category/:id",authenticate, checkPermission("category", "delete"), categoryDelete);
