@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import Rolepermission from "../models/rolepermission.model";
 import { publishEvent } from "../events/publisher";
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
 // REGISTER - POST /Rolepermission
 
