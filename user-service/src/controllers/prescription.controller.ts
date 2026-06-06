@@ -34,16 +34,23 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     patientExists = await Patient.findOne({ where: { id: finalPatientId, isDelete: false } });
     
   }
-  
+
+
+ console.log(userId, patientExists, "patientExists");
 
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
+
+   console.log("hoooo");
     
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
 
     const booking = await httpClient.get(`${process.env.BOOKING_SERVICE_URL}/booking/${bookingId}`,{
       headers: { Authorization: req.headers.authorization }
     });
+
+
+   console.log("booking"):
 
     
     
