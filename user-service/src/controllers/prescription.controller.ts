@@ -40,6 +40,8 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       headers: { Authorization: req.headers.authorization }
     });
 
+   console.log(booking, "booking");
+
     
     if (user) {
       patientExists = await Patient.create({
@@ -98,6 +100,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
     bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy 
   });
 
+ console.log(prescription, "prescription");
 
      // 4. If any vitals field is provided, create a vitals record
     if (temperature || pulse || respiratoryRate || spo2 || height || weight || waist) {
@@ -119,6 +122,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       });
     }
 
+ console.log("hiiiii");
 
   await publishEvent(
     "prescription_events",
