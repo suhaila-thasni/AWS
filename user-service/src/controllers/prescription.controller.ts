@@ -125,7 +125,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
         bsa = parseFloat((0.007184 * Math.pow(height, 0.725) * Math.pow(weight, 0.425)).toFixed(4));
       }
 
-    
+
       await PatientVitals.create({
         prescriptionId: prescription.id,
         patientId:  patientExists?.id,
@@ -147,6 +147,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       hospitalId: prescription.hospitalId,
     }
   );
+
 
   res.status(201).json({
     success: true,
