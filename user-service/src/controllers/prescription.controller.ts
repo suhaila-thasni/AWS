@@ -13,7 +13,7 @@ dotenv.config();
 
 // REGISTER
 
-export const createPrescription: any = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
  
   const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy  } = req.body;
 
@@ -21,6 +21,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
     } = req.body;
 
+    console.log(req.body, "hello")
 
   const errors: string[] = [];
 
@@ -28,21 +29,27 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
   let finalPatientId = patientId;
   let patientExists = null;
 
+  console.log(finalPatientId, "hiiooioi");
   
 
   if (finalPatientId) {
     patientExists = await Patient.findOne({ where: { id: finalPatientId, isDelete: false } });
+    console.log(patientExists, "patientExists");
     
   }
+
+  console.log(patientExists, "ioioiioo patinent");
   
 
   // Auto Create Patient if not found but we have a userId
   if (!patientExists && userId) {
+    console.log("ooopop");
     
     const user = await User.findOne({ where: { id: userId, isDelete: false } });
 
 
-    let booking: any;
+
+        let booking: any;
 
 try {
   booking = await httpClient.get(
@@ -52,6 +59,7 @@ try {
     }
   );
 } catch (error: any) {
+  console.log("Booking API Error:", error.response?.data);
 
    res.status(error.response?.status || 500).json({
     success: false,
@@ -61,8 +69,12 @@ try {
       "Booking service error",
     error: error.response?.data,
   });
-  return;
+  return
 }
+
+    console.log(booking, "booking");
+
+    
     
     if (user) {
       patientExists = await Patient.create({
@@ -77,9 +89,11 @@ try {
         location: { place: booking?.data?.data?.patient_place, pincode: 0 },
       });
 
+      console.log(patientExists, "patientExists");
       
       finalPatientId = patientExists.id;
 
+      console.log("hiiiii ");
       
     } else {
       errors.push(`User with ID ${userId} does not exist. Cannot auto-create patient.`);
@@ -93,6 +107,7 @@ try {
     await httpClient.get(`${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`, {
       headers: { Authorization: req.headers.authorization }
     });
+    console.log("doctror");
     
   } catch (error: any) {
     console.error("Doctor validation failed:", error.message);
@@ -105,6 +120,7 @@ try {
       headers: { Authorization: req.headers.authorization }
     });
 
+    console.log("hospti");
     
   } catch (error: any) {
     console.error("Hospital validation failed:", error.message);
@@ -128,7 +144,10 @@ try {
     bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy 
   });
 
+  console.log(prescription, "prescrip");
   
+
+
      // 4. If any vitals field is provided, create a vitals record
     if (temperature || pulse || respiratoryRate || spo2 || height || weight || waist) {
       // We'll calculate BMI/BSA here or let the service handle it.
@@ -141,10 +160,12 @@ try {
         bsa = parseFloat((0.007184 * Math.pow(height, 0.725) * Math.pow(weight, 0.425)).toFixed(4));
       }
 
-    
+      console.log(patientExists?.id, "id");
+      
+
       await PatientVitals.create({
         prescriptionId: prescription.id,
-        patientId:  patientExists?.id,
+        patientId: patientExists?.id,
         temperature, pulse, respiratoryRate, spo2,
         height, weight, waist, bmi, bsa
       });
@@ -165,13 +186,16 @@ try {
   );
 
 
+  console.log("success");
+  
+
+
   res.status(201).json({
     success: true,
     message: "Prescription created successfully",
     data: prescription,
   });
 });
-
 
 // GET ALL USERS Prescription
 
