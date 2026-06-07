@@ -1398,6 +1398,8 @@ export const getDoctors = asyncHandler(
     name = normalizeQuery(name);
     status = normalizeQuery(status);
     search_query = normalizeQuery(search_query);
+    page = normalizeQuery(page);
+    limit = normalizeQuery(limit);
 
     const whereClause: any = {};
     const andConditions: any[] = [];
