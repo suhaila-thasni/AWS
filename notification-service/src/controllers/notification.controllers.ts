@@ -148,9 +148,35 @@ export const getNotification: any = asyncHandler(
 ========================================================= */
 
 export const getRoleNotifications: any = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (req: any, res: Response) => {
 
-    const { role, id } = req.params;
+    const { role, id, date } = req.params;
+
+  const normalizeQuery = (value: any) =>
+      Array.isArray(value) ? value[0] : value;
+
+    let {
+      page = 1,
+      limit = 10,
+    }: any = req.query;
+
+page = normalizeQuery(page);
+limit = normalizeQuery(limit);
+
+
+    if (!authorizeSelfAccess(req, role, id, res)) {
+      return;
+    }
+
+
+    const pageNum = Math.max(Number(page) || 1, 1);
+
+    // max 100 limit protection
+    const limitNum = Math.min(
+      Math.max(Number(limit) || 10, 1),
+      100
+    );
+
 
     const numericId = Number(id);
 
@@ -238,22 +264,52 @@ export const getRoleNotifications: any = asyncHandler(
         return;
     }
 
+
+  if (date) {
+  const startDate = new Date(date);
+  const endDate = new Date(date);
+
+  endDate.setDate(endDate.getDate() + 1);
+
+  whereCondition.createdAt = {
+    [Op.gte]: startDate,
+    [Op.lt]: endDate,
+  };
+}
     const notifications =
-      await Notification.findAll({
+      await Notification.findAndCountAll({
 
         where: whereCondition,
+          limit: limitNum,
+      offset: (pageNum - 1) * limitNum,
 
         order: [["createdAt", "DESC"]],
 
       });
 
-    res.status(200).json({
+    /* --------------------------- PAGINATION ------------------------------- */
+
+    const totalPages =
+      Math.ceil(notifications.count / limitNum) || 1;
+
+    /* ----------------------------- RESPONSE ------------------------------- */
+
+     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.rows,
+      pagination: {
+        totalItems: notifications.count,
+        totalPages,
+        currentPage: pageNum,
+        limit: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPreviousPage: pageNum > 1,
+      },
       error: null,
     });
-
+    return;
   }
+
 );
 
 /* =========================================================
