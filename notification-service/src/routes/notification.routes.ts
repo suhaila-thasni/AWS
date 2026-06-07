@@ -76,7 +76,7 @@ router.get(
 
 router.get(
 
-  "/notification/:role/:id",
+  "/notification/:role/:id/:date",
 
   validateParams(getByRoleParamsSchema),
 
