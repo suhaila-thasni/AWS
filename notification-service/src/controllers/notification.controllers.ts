@@ -150,7 +150,7 @@ export const getNotification: any = asyncHandler(
 export const getRoleNotifications: any = asyncHandler(
   async (req: any, res: Response) => {
 
-    const { role, id, date } = req.params;
+    const { role, id, } = req.params;
 
   const normalizeQuery = (value: any) =>
       Array.isArray(value) ? value[0] : value;
@@ -158,10 +158,12 @@ export const getRoleNotifications: any = asyncHandler(
     let {
       page = 1,
       limit = 10,
+       date,
     }: any = req.query;
 
 page = normalizeQuery(page);
 limit = normalizeQuery(limit);
+date = normalizeQuery(date);
 
 
     if (!authorizeSelfAccess(req, role, id, res)) {
