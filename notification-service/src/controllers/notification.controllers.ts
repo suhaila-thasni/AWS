@@ -150,7 +150,7 @@ export const getNotification: any = asyncHandler(
 export const getRoleNotifications: any = asyncHandler(
   async (req: any, res: Response) => {
 
-    const { role, id, } = req.params;
+    const { role, id } = req.params;
 
   const normalizeQuery = (value: any) =>
       Array.isArray(value) ? value[0] : value;
@@ -158,7 +158,7 @@ export const getRoleNotifications: any = asyncHandler(
     let {
       page = 1,
       limit = 10,
-       date,
+      date,
     }: any = req.query;
 
 page = normalizeQuery(page);
@@ -166,9 +166,9 @@ limit = normalizeQuery(limit);
 date = normalizeQuery(date);
 
 
-    if (!authorizeSelfAccess(req, role, id, res)) {
-      return;
-    }
+    // if (!authorizeSelfAccess(req, role, id, res)) {
+    //   return;
+    // }
 
 
     const pageNum = Math.max(Number(page) || 1, 1);
@@ -266,25 +266,26 @@ date = normalizeQuery(date);
         return;
     }
 
-
-  if (date) {
+    if (date) {
   const startDate = new Date(date);
   const endDate = new Date(date);
 
   endDate.setDate(endDate.getDate() + 1);
+
 
   whereCondition.createdAt = {
     [Op.gte]: startDate,
     [Op.lt]: endDate,
   };
 }
+
+
     const notifications =
       await Notification.findAndCountAll({
 
         where: whereCondition,
           limit: limitNum,
       offset: (pageNum - 1) * limitNum,
-
         order: [["createdAt", "DESC"]],
 
       });
@@ -313,6 +314,7 @@ date = normalizeQuery(date);
   }
 
 );
+
 
 /* =========================================================
    MARK AS READ
