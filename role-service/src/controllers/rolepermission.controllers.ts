@@ -166,62 +166,56 @@ export const rolepermissionDelete: any = asyncHandler(async (req: Request, res: 
 });
 
 // GET ALL - GET /Rolepermission
+
 export const getRolepermission: any = asyncHandler(
-  async (req: Request, res: Response) : Promise<void> => {
+  async (req: Request, res: Response) => {
 
-    let { hospitalId, labId, pharmacyId, roleId }: any = req.query;
+    const normalizeQuery = (value: any) =>
+      Array.isArray(value) ? value[0] : value;
 
-    // Handle array query params
-    hospitalId = Array.isArray(hospitalId) ? hospitalId[0] : hospitalId;
-    labId = Array.isArray(labId) ? labId[0] : labId;
-    pharmacyId = Array.isArray(pharmacyId) ? pharmacyId[0] : pharmacyId;
-    roleId = Array.isArray(roleId) ? roleId[0] : roleId;
+    let { hospitalId, labId, pharmacyId }: any = req.query;
+   
+
+   hospitalId = normalizeQuery(hospitalId);
+labId = normalizeQuery(labId);
+pharmacyId = normalizeQuery(pharmacyId);
+
 
     const whereClause: any = {};
 
-    // Dynamic filters
-    if (hospitalId) {
+    if (hospitalId !== undefined) {
       whereClause.hospitalId = Number(hospitalId);
     }
 
-    if (labId) {
+    if (labId !== undefined) {
       whereClause.labId = Number(labId);
     }
 
-    if (pharmacyId) {
+    if (pharmacyId !== undefined) {
       whereClause.pharmacyId = Number(pharmacyId);
-    }
-
-    if (roleId) {
-      whereClause.roleId = Number(roleId);
     }
 
     const rolepermission = await Rolepermission.findAll({
       where: whereClause,
-      order: [["id", "DESC"]],
     });
 
     if (rolepermission.length === 0) {
       res.status(404).json({
         success: false,
         message: "No data found",
-        data: [],
-        error: {
-          code: "NO_DATA_FOUND",
-          details: null,
-        },
+        data: null,
+        error: { code: "NO_DATA_FOUND", details: null },
       });
-       return;
+      return;
     }
 
-   res.status(200).json({
+    res.status(200).json({
       success: true,
       status: "Success",
       data: rolepermission,
       error: null,
     });
-     return;
-  }
+  },
 );
 
 
