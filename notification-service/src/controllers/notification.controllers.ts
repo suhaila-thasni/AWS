@@ -447,9 +447,6 @@ export const markAsReadAll: any = asyncHandler(
     const { role, userId } = req.params;
     const { notificationIds } = req.body;
 
-    if (!authorizeSelfAccess(req, role, userId, res)) {
-      return;
-    }
 
     if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
       res.status(400).json({
