@@ -11,6 +11,7 @@ import {
   markAsRead,
   updateData,
   notificationDelete,
+  markAsReadAll,
 
 } from "../controllers/notification.controllers";
 
@@ -100,6 +101,11 @@ router.put(
 
   markAsRead
 
+);
+
+router.put(
+  "/notification/read-all/:role/:userId",
+ markAsReadAll
 );
 
 /* =========================================================
