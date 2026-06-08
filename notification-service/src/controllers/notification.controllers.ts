@@ -441,6 +441,111 @@ export const markAsRead: any = asyncHandler(
   }
 );
 
+
+export const markAsReadAll: any = asyncHandler(
+  async (req: any, res: Response) : Promise<void> => {
+    const { role, userId } = req.params;
+    const { notificationIds } = req.body;
+
+    if (!authorizeSelfAccess(req, role, userId, res)) {
+      return;
+    }
+
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "notificationIds array is required",
+      });
+      return;
+    }
+
+    const notifications = await Notification.findAll({
+      where: {
+        id: notificationIds,
+      },
+    });
+
+    const numericUserId = Number(userId);
+
+    for (const notification of notifications) {
+      switch (role) {
+        case "user":
+          notification.userReadStatus = {
+            ...(notification.userReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "hospital":
+          notification.hospitalReadStatus = {
+            ...(notification.hospitalReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "doctor":
+          notification.doctorReadStatus = {
+            ...(notification.doctorReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "staff":
+          notification.staffReadStatus = {
+            ...(notification.staffReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "pharmacy":
+          notification.pharmacyReadStatus = {
+            ...(notification.pharmacyReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "lab":
+          notification.labReadStatus = {
+            ...(notification.labReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        case "superadmin":
+          notification.superAdminReadStatus = {
+            ...(notification.superAdminReadStatus as object),
+            [numericUserId]: true,
+          };
+          break;
+
+        default:
+           res.status(400).json({
+            success: false,
+            message: "Invalid role",
+          });
+          return;
+      }
+
+      await notification.save();
+
+      await publishEvent(
+        "notification_events",
+        "NOTIFICATION_READ",
+        {
+          notificationId: notification.id,
+          role,
+          userId,
+        }
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read",
+    });
+  }
+);
+
 /* =========================================================
    UPDATE NOTIFICATION
    PUT /notification/:id
