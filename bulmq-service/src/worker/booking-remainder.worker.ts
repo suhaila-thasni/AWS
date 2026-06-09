@@ -1,4 +1,4 @@
-import connection from "../config/redis";
+import { connection } from "../config/redis";
 import dotenv from "dotenv";
 import twilio from "twilio";
 import { Worker } from "bullmq";
