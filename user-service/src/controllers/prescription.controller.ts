@@ -15,7 +15,19 @@ dotenv.config();
 
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
  
-  const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy  } = req.body;
+  const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy,
+     type,
+  content,
+  x,
+  y,
+  width,
+  templateHeight,
+  fontSize,
+  fontWeight,
+  textAlign,
+  textColor,
+  bgColor,
+    } = req.body;
 
       const {
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
@@ -67,7 +79,6 @@ try {
 }
 
 
-    
     
     if (user) {
       patientExists = await Patient.create({
@@ -129,7 +140,18 @@ try {
 
   // 5. Create Prescription
   const prescription = await Prescription.create({
-    bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy 
+    bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy, 
+    type,
+  content,
+  x,
+  y,
+  width,
+  height: templateHeight,
+  fontSize,
+  fontWeight,
+  textAlign,
+  textColor,
+  bgColor,
   });
 
 
@@ -167,8 +189,6 @@ try {
       hospitalId: prescription.hospitalId,
     }
   );
-
-  
 
 
   res.status(201).json({
