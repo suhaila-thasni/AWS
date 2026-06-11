@@ -33,7 +33,7 @@ export const createPrescription: any = asyncHandler(async (req: Request, res: Re
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
     } = req.body;
  
-  
+  console.log(req.body, "iii");
 
   const errors: string[] = [];
 
