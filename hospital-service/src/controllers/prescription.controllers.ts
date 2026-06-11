@@ -114,7 +114,7 @@ export const getPrescription = asyncHandler(
 
     hospitalId = normalizeQuery(hospitalId);
 
-    const whereClause: any = {};
+    const whereClause: Record<string, any> = {};
 
     if (hospitalId && !isNaN(Number(hospitalId))) {
       whereClause.hospitalId = Number(hospitalId);
@@ -125,27 +125,35 @@ export const getPrescription = asyncHandler(
       order: [["createdAt", "DESC"]],
     });
 
-     const demoPrescription = await Prescription.findAll({
-    limit: 1,
-    order: [["createdAt", "ASC"]],
-  });
-
-
-  if (demoPrescription.length === 0) {
-     res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: [],
-      demoPrescription,
-      error: { code: "NO_DATA_FOUND", details: null },
+    const demoPrescription = await Prescription.findAll({
+      where: {
+        templateType: "demo",
+      },
+      order: [["createdAt", "ASC"]],
     });
-    return;
-  }
+    
 
+    if (
+      prescriptions.length === 0 &&
+      demoPrescription.length === 0
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        prescriptions: [],
+        demoPrescription: [],
+        error: {
+          code: "NO_DATA_FOUND",
+          details: null,
+        },
+      });
+      return;
+    }
 
     res.status(200).json({
       success: true,
-      data: prescriptions,
+      prescriptions,
+      demoPrescription,
       error: null,
     });
   }
