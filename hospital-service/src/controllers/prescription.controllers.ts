@@ -15,6 +15,7 @@ export const Registeration = asyncHandler(
     design,
       templateType,
       hospitalId,
+      canvasBg
     } = req.body;
 
     // Check hospital
@@ -59,7 +60,8 @@ export const Registeration = asyncHandler(
     const newPrescription = await Prescription.create({
     hospitalId,
       templateType,
-       design
+       design,
+       canvasBg
     });
 
 
@@ -244,6 +246,7 @@ export const updatePrescription = asyncHandler(
         design,
       templateType,
       hospitalId,
+      canvasBg,
     } = req.body;
 
     // Check prescription
@@ -289,6 +292,7 @@ export const updatePrescription = asyncHandler(
         design,
       templateType,
       hospitalId,
+      canvasBg,
     });
 
     // Publish event
