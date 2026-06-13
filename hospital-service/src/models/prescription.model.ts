@@ -15,6 +15,11 @@ TemplateItem.init(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    canvasBg:
+    {
+      type: DataTypes.STRING,
+      defaultValue: "FFFFFF"
+    },
 
    templateType: {
       type: DataTypes.ENUM(
