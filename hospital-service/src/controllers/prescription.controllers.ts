@@ -241,18 +241,7 @@ export const updatePrescription = asyncHandler(
     const { id } = req.params;
 
     const {
-      bgColor,
-      textColor,
-      textAlign,
-      fontWeight,
-      fontSize,
-      editable,
-      height,
-      width,
-      y,
-      x,
-      content,
-      type,
+        design,
       templateType,
       hospitalId,
     } = req.body;
@@ -297,18 +286,7 @@ export const updatePrescription = asyncHandler(
 
     // Update
     await prescription.update({
-      bgColor,
-      textColor,
-      textAlign,
-      fontWeight,
-      fontSize,
-      editable,
-      height,
-      width,
-      y,
-      x,
-      content,
-      type,
+        design,
       templateType,
       hospitalId,
     });
