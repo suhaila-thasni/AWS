@@ -16,24 +16,15 @@ dotenv.config();
 export const createPrescription: any = asyncHandler(async (req: Request, res: Response) => {
  
   const { bookingId, hospitalId, doctorId, patientId, userId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy,
-     type,
-  content,
-  x,
-  y,
-  width,
-  templateHeight,
-  fontSize,
-  fontWeight,
-  textAlign,
-  textColor,
-  bgColor,
+   canvasBg,
+  design,
     } = req.body;
 
       const {
       temperature, pulse, respiratoryRate, spo2, height, weight, waist
     } = req.body;
  
-  console.log(req.body, "iii");
+ 
 
   const errors: string[] = [];
 
@@ -141,17 +132,8 @@ try {
   // 5. Create Prescription
   const prescription = await Prescription.create({
     bookingId, hospitalId, doctorId, patientId: finalPatientId, userId: finalUserId, complaint, medications, investigations, advice, next_consultation, empty_stomach, prescribedBy, 
-    type,
-  content,
-  x,
-  y,
-  width,
-  height: templateHeight,
-  fontSize,
-  fontWeight,
-  textAlign,
-  textColor,
-  bgColor,
+   canvasBg,
+  design,
   });
 
 
