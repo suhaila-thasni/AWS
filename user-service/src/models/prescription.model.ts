@@ -41,17 +41,8 @@ interface IPrescription {
   empty_stomach?: boolean;
   date?: Date; 
   prescribedBy: string;
-  type: string;
-  content: string;
-  x: number;
-  y:number;
-  width: number;
-  height: number;
-  fontSize: string;
-  fontWeight: string;
-  textAlign: string;
-  textColor: string;
-  bgColor: string;
+  canvasBg : string;
+  design: string[];
 
   deleteDate?: Date;
   isActive?: boolean;
@@ -116,17 +107,9 @@ class Prescription
   public isDelete?: boolean;
   public prescribedBy: string;
 
-  public x: number;
-  public y: number;
-  public type: string;
-  public width: number;
-  public height: number;
-  public fontSize: string;
-  public fontWeight: string;
-  public textAlign: string;
-  public bgColor: string;
-  public content: string;
-  public textColor: string;
+  public canvasBg: string;
+  public design: string[];
+  
 
 } 
 
@@ -220,57 +203,16 @@ Prescription.init(
       defaultValue: false,
     },
 
-     type: {
+       canvasBg:
+    {
       type: DataTypes.STRING,
+    },
+
+
+    design: {
+      type: DataTypes.JSON,
       allowNull: false,
-    },
-
-    content: {
-      type: DataTypes.TEXT,
-      defaultValue: "",
-    },
-
-    x: {
-      type: DataTypes.FLOAT,
-      defaultValue: 0,
-    },
-
-    y: {
-      type: DataTypes.FLOAT,
-      defaultValue: 0,
-    },
-
-    width: {
-      type: DataTypes.FLOAT,
-      defaultValue: 100,
-    },
-
-    height: {
-      type: DataTypes.FLOAT,
-      defaultValue: 40,
-    },
-
-
-    fontSize: {
-      type: DataTypes.STRING,
-      defaultValue: "text-base",
-    },
-
-    fontWeight: {
-      type: DataTypes.STRING,
-      defaultValue: "",
-    },
-
-    textAlign: {
-      type: DataTypes.STRING,
-    },
-
-    textColor: {
-      type: DataTypes.STRING,
-    },
-
-    bgColor: {
-      type: DataTypes.STRING,
+      defaultValue: [],
     },
 
   },
