@@ -52,10 +52,7 @@ Document.init(
 
     imageUrl: {
       type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
+      allowNull: true,
     },
 
     isActive: {
