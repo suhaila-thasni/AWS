@@ -3,13 +3,12 @@ import asyncHandler from "express-async-handler";
 import Document from "../models/document.model";
 
 export const createDocument: any = asyncHandler(async (req: Request, res: Response) => {
-  const { patientId, name, date, imageUrl } = req.body;
+  const { patientId, name, date } = req.body;
 
   const document = await Document.create({
     patientId,
     name,
     date,
-    imageUrl,
   });
 
   res.status(201).json({
