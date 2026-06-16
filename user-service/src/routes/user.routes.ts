@@ -115,18 +115,18 @@ router.delete("/prescription/:id", authenticate, checkPermission("prescription",
 
 
 // Lab Result
-router.post("/lab-results", authenticate, checkPermission("labresult", "create"), createLabResult);
-router.get("/lab-results", authenticate, checkPermission("labresult", "view"), getLabResults);
-router.get("/lab-results/:id", authenticate, validateParams(idParamSchema), checkPermission("labresult", "view"), getLabResult);
-router.put("/lab-results/:id", authenticate, validateParams(idParamSchema), checkPermission("labresult", "edit"), updateLabResult);
-router.delete("/lab-results/:id", authenticate, validateParams(idParamSchema), checkPermission("labresult", "delete"), deleteLabResult);
+router.post("/lab-results", authenticate,  createLabResult);
+router.get("/lab-results", authenticate,  getLabResults);
+router.get("/lab-results/:id", authenticate, validateParams(idParamSchema), getLabResult);
+router.put("/lab-results/:id", authenticate, validateParams(idParamSchema),  updateLabResult);
+router.delete("/lab-results/:id", authenticate, validateParams(idParamSchema),  deleteLabResult);
 
 // Document
-router.post("/documents", authenticate, checkPermission("document", "create"), createDocument);
+router.post("/documents",  createDocument);
 router.get("/documents", authenticate, checkPermission("document", "view"), getDocuments);
-router.get("/documents/:id", authenticate, validateParams(idParamSchema), checkPermission("document", "view"), getDocument);
-router.put("/documents/:id", authenticate, validateParams(idParamSchema), checkPermission("document", "edit"), updateDocument);
-router.delete("/documents/:id", authenticate, validateParams(idParamSchema), checkPermission("document", "delete"), deleteDocument);
+router.get("/documents/:id", authenticate, validateParams(idParamSchema),  getDocument);
+router.put("/documents/:id", authenticate, validateParams(idParamSchema), updateDocument);
+router.delete("/documents/:id", authenticate, validateParams(idParamSchema),  deleteDocument);
 
 router.post("/vitals",  addVitals);
 router.get("/vitals", authenticate, getLatestVitals);
