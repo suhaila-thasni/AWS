@@ -123,7 +123,7 @@ router.delete("/lab-results/:id", authenticate, validateParams(idParamSchema),  
 
 // Document
 router.post("/documents",  createDocument);
-router.get("/documents", authenticate, checkPermission("document", "view"), getDocuments);
+router.get("/documents", authenticate,  getDocuments);
 router.get("/documents/:id", authenticate, validateParams(idParamSchema),  getDocument);
 router.put("/documents/:id", authenticate, validateParams(idParamSchema), updateDocument);
 router.delete("/documents/:id", authenticate, validateParams(idParamSchema),  deleteDocument);
