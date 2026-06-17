@@ -45,7 +45,7 @@ LabResult.init(
 
     labId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
 
     hospitalId: {
