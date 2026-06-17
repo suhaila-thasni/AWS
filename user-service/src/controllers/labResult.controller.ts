@@ -3,7 +3,7 @@ import asyncHandler from "express-async-handler";
 import LabResult from "../models/labResult.model";
 
 export const createLabResult: any = asyncHandler(async (req: Request, res: Response) => {
-  const { labId, hospitalId, patientId, doctorId, department, testName, imageUrl, status } = req.body;
+  const { labId, hospitalId, patientId, doctorId, department, testName,  status } = req.body;
 
   const labResult = await LabResult.create({
     labId,
@@ -12,7 +12,6 @@ export const createLabResult: any = asyncHandler(async (req: Request, res: Respo
     doctorId,
     department,
     testName,
-    imageUrl,
     status,
   });
 
@@ -23,9 +22,26 @@ export const createLabResult: any = asyncHandler(async (req: Request, res: Respo
   });
 });
 
+
+
 export const getLabResults: any = asyncHandler(async (req: Request, res: Response) => {
+
+    const normalizeQuery = (value: any) =>
+      Array.isArray(value) ? value[0] : value;
+
+    let { patientId } = req.query;
+
+    patientId = normalizeQuery(patientId);
+
+    const whereClause: any = {};
+
+    if (patientId && !isNaN(Number(patientId))) {
+      whereClause.patientId = Number(patientId);
+    }
+
+
   const labResults = await LabResult.findAll({
-    where: { isActive: true },
+      where: whereClause,
     order: [["createdAt", "DESC"]],
   });
 
