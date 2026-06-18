@@ -157,16 +157,32 @@ asyncHandler(
        CREATE REVIEW
     ========================== */
 
-    const newReview =
+ let newReview : any;
+
+    if(hospitalId && doctorId){
+
+      newReview =
       await Review.create({
         userId,
-        hospitalId,
         doctorId,
         comment,
         rating,
         imageUrl: user?.data?.data?.imageUrl,
         name: user?.data?.data?.name,
       });
+
+    }else{
+         
+    newReview =  await Review.create({
+        userId,
+        hospitalId,
+        comment,
+        rating,
+        imageUrl: user?.data?.data?.imageUrl,
+        name: user?.data?.data?.name,
+      });
+
+    }
 
     /* =========================
        PUBLISH EVENT
