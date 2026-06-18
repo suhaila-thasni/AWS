@@ -12,6 +12,7 @@ interface IReview {
   hospitalId?: number; 
   doctorId?: number;
   comment: string;
+   rating: number;
 
   
 }
@@ -48,7 +49,7 @@ class Review
   public doctorId?: number;
 
   public comment!: string;
-
+  public rating: number;
 }
 
 /* =======================
@@ -83,7 +84,15 @@ Review.init(
 
     comment: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+        rating: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      validate: {
+        min: 1,
+        max: 5,
+      },
     },
 
 
