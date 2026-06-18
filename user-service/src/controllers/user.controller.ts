@@ -8,6 +8,9 @@ import jwt from "jsonwebtoken";
 import { generateToken, generateRefreshToken } from "../services/jwt.service";
 import { publishEvent } from "../events/publisher";
 import { Op } from "sequelize";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Helper to set refresh token cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
@@ -664,4 +667,160 @@ export const logout: any = asyncHandler(async (req: Request, res: Response) => {
   });
   res.status(200).json({ success: true, message: "Logged out successfully" });
 });
+
+export const sendEnquiry = asyncHandler(
+  async (req: Request, res: Response) : Promise<void>  => {
+    const { name, email, subject, message } = req.body;
+
+    if (!name || !email || !subject || !message) {
+       res.status(400).json({
+        success: false,
+        message: "Name, email, subject and message are required.",
+      });
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: Number(587),
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"Website Enquiry" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+
+      // When company clicks Reply, it goes to the user's email
+      replyTo: email,
+
+      subject: `New Enquiry - ${subject}`,
+
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+
+        <table width="650" cellpadding="0" cellspacing="0"
+          style="background:#ffffff;border-radius:12px;overflow:hidden;
+          box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td
+              style="background:linear-gradient(135deg,#0d6efd,#0a58ca);
+              color:white;padding:30px;">
+
+              <h1 style="margin:0;font-size:24px;">
+                New Enquiry Received
+              </h1>
+
+              <p style="margin-top:10px;opacity:.9;">
+                A new enquiry has been submitted through your website.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:30px;">
+
+              <table width="100%" cellpadding="12" cellspacing="0"
+                style="border-collapse:collapse;">
+
+                <tr>
+                  <td style="font-weight:bold;width:150px;">
+                    Name
+                  </td>
+                  <td>${name}</td>
+                </tr>
+
+                <tr style="background:#f8fafc;">
+                  <td style="font-weight:bold;">
+                    Email
+                  </td>
+                  <td>
+                    <a href="mailto:${email}">
+                      ${email}
+                    </a>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="font-weight:bold;">
+                    Subject
+                  </td>
+                  <td>${subject}</td>
+                </tr>
+
+              </table>
+
+              <div
+                style="
+                  margin-top:30px;
+                  background:#f8fafc;
+                  border-left:5px solid #0d6efd;
+                  padding:20px;
+                  border-radius:8px;
+                "
+              >
+                <h3 style="margin-top:0;">
+                  Message
+                </h3>
+
+                <p
+                  style="
+                    line-height:1.7;
+                    margin:0;
+                    white-space:pre-wrap;
+                  "
+                >
+                  ${message}
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td
+              style="
+                background:#f8fafc;
+                text-align:center;
+                padding:20px;
+                color:#64748b;
+                font-size:13px;
+              "
+            >
+              This email was generated automatically from your website enquiry form.
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`
+      
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Enquiry submitted successfully.",
+    });
+    return;
+  }
+);
 
