@@ -200,6 +200,7 @@ asyncHandler(
 );
 
 
+
 // GET ONE - GET /review/:id
 export const getanReview : any = asyncHandler(async (req: Request, res: Response) => {
   const review = await Review.findByPk(req.params.id);
@@ -289,9 +290,9 @@ export const reviewDelete: any = asyncHandler(async (req: Request, res: Response
 });
 
 // GET ALL - GET /review
-export const getReview: any = asyncHandler(async (req: Request, res: Response) => {
 
-
+export const getReview: any = asyncHandler(
+  async (req: Request, res: Response) : Promise<void> => {
     let {
       hospitalId,
       doctorId,
@@ -299,64 +300,46 @@ export const getReview: any = asyncHandler(async (req: Request, res: Response) =
       limit = 5,
     }: any = req.query;
 
-    // normalize arrays
+    // Normalize query params
     const normalize = (val: any) =>
       Array.isArray(val) ? val[0] : val;
 
     hospitalId = normalize(hospitalId);
     doctorId = normalize(doctorId);
-    
 
-    page = Number(page) || 1;
-    limit = Number(limit) || 5;
+    // Pagination
+    page = Math.max(Number(page) || 1, 1);
+    limit = Math.min(Math.max(Number(limit) || 5, 1), 100);
 
     const offset = (page - 1) * limit;
 
-    // base filter
-    const whereClause: any = {
-      isDelete: false,
-    };
+    // Where clause
+    const whereClause: any = {};
 
-    // hospital filter
-    if (hospitalId) {
+    // Hospital filter
+    if (hospitalId && !isNaN(Number(hospitalId))) {
       whereClause.hospitalId = Number(hospitalId);
     }
 
-     if (doctorId) {
+    // Doctor filter
+    if (doctorId && !isNaN(Number(doctorId))) {
       whereClause.doctorId = Number(doctorId);
     }
 
-
-
-   const { count, rows } = await Review.findAndCountAll({
+    // Fetch reviews
+    const { count, rows } = await Review.findAndCountAll({
       where: whereClause,
       limit,
       offset,
       order: [["createdAt", "DESC"]],
     });
 
-    if (!rows.length) {
-      res.status(404).json({
-        success: false,
-        message: "No data found",
-        data: [],
-        pagination: {
-          totalItems: 0,
-          totalPages: 0,
-          currentPage: page,
-          limit,
-        },
-        error: {
-          code: "NO_DATA_FOUND",
-          details: null,
-        },
-      });
-      return;
-    }
-
-    res.status(200).json({
+     res.status(200).json({
       success: true,
-      message: "Review fetched successfully",
+      message:
+        rows.length > 0
+          ? "Review fetched successfully"
+          : "No reviews found",
       data: rows,
       pagination: {
         totalItems: count,
@@ -368,10 +351,9 @@ export const getReview: any = asyncHandler(async (req: Request, res: Response) =
       },
       error: null,
     });
-
-
-
-});
+    return;
+  }
+);
 
 
 
@@ -388,9 +370,7 @@ export const getRating: any = asyncHandler(
     doctorId = normalize(doctorId);
 
     // Base filter
-    const whereClause: any = {
-      isDelete: false,
-    };
+    const whereClause: any = {};
 
     if (hospitalId) {
       whereClause.hospitalId = Number(hospitalId);
@@ -490,7 +470,6 @@ export const getRating: any = asyncHandler(
         averageRating,
         totalReviews,
         ratingBreakdown,
-        reviews,
       },
       error: null,
     });
