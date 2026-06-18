@@ -36,15 +36,6 @@ asyncHandler(
     }
 
 
-    if (!hospitalId && !doctorId) {
-      res.status(400).json({
-        success: false,
-        message:
-          "hospitalId or doctorId required"
-      });
-      return;
-    }
-
     if (!comment) {
       res.status(400).json({
         success: false,
