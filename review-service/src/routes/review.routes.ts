@@ -5,6 +5,7 @@ import {
   updateData,
   reviewDelete,
   getReview,
+  getRating
 
 } from "../controllers/review.controllers";
 import { authenticate } from "../middleware/authenticate";
@@ -16,11 +17,13 @@ const router = Router();
 
 // CRUD
 
-router.post("/review", authenticate, Registeration);
+router.post("/review",  Registeration);
 router.get("/review", getReview);
-router.get("/review/:id",authenticate, getanReview);
-router.put("/review/:id", authenticate, updateData);
-router.delete("/review/:id", authenticate, reviewDelete);
+router.get("/review/:id", getanReview);
+router.put("/review/:id",  updateData);
+router.delete("/review/:id", reviewDelete);
+router.get("/review/rating", getRating);
+
 
 
 
