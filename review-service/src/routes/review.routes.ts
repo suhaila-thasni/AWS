@@ -19,10 +19,10 @@ const router = Router();
 
 router.post("/review",  Registeration);
 router.get("/review", getReview);
+router.get("/review/rating", getRating);
 router.get("/review/:id", getanReview);
 router.put("/review/:id",  updateData);
 router.delete("/review/:id", reviewDelete);
-router.get("/review/rating", getRating);
 
 
 
