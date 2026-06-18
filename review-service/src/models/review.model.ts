@@ -13,7 +13,8 @@ interface IReview {
   doctorId?: number;
   comment: string;
    rating: number;
-
+   name: string;
+  imageUrl: string;
   
 }
 
@@ -50,6 +51,9 @@ class Review
 
   public comment!: string;
   public rating: number;
+  public imageUrl: string;
+  public name: string;
+
 }
 
 /* =======================
@@ -60,6 +64,14 @@ Review.init(
 
   {
 
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+      imageUrl: {
+      type: DataTypes.STRING, // 🔥 store imageUrl + public_id
+      allowNull: true
+    },
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
