@@ -23,7 +23,8 @@ import {
   getBlacklistedPatients,
   refreshUserToken,
   logout,
-  getBlacklistedUsers
+  getBlacklistedUsers,
+  sendEnquiry
 } from "../controllers/user.controller";
 
 import {
@@ -134,6 +135,9 @@ router.get("/vitals/:id", authenticate,  getVitalsById);
 router.put("/vitals/:id", authenticate,  updateVitals);
 router.get("/vitals/patient/:patientId",  getVitalsByPatient);
 router.delete("/vitals/:id", authenticate,  deleteVitals);
+
+router.post("/email-enquiry",   sendEnquiry);
+
 
 
 
