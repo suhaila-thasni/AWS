@@ -17,7 +17,8 @@ asyncHandler(
       userId,
       hospitalId,
       doctorId,
-      comment
+      comment,
+      rating
     } = req.body;
 
     /* =========================
@@ -53,13 +54,10 @@ asyncHandler(
        EXISTENCE CHECKS
     ========================== */
 
-    const userServiceUrl = process.env.USER_SERVICE_URL || "http://user-service:3002";
-    const doctorServiceUrl = process.env.DOCTOR_SERVICE_URL || "http://doctor-service:3007";
-    const hospitalServiceUrl = process.env.HOSPITAL_SERVICE_URL || "http://hospital-service:3009";
 
     try {
       // 1. Check User
-      await axios.get(`${userServiceUrl}/users/${userId}`, {
+      await axios.get(`${process.env.USER_SERVICE_URL}/users/${userId}`, {
         headers: { Authorization: req.headers.authorization }
       });
     } catch (error: any) {
@@ -72,7 +70,7 @@ asyncHandler(
     try {
       // 2. Check Hospital
       if (hospitalId) {
-        await axios.get(`${hospitalServiceUrl}/hospital/${hospitalId}`, {
+        await axios.get(`${process.env.HOSPITAL_SERVICE_URL}/hospital/${hospitalId}`, {
           headers: { Authorization: req.headers.authorization }
         });
       }
@@ -86,7 +84,7 @@ asyncHandler(
     try {
       // 3. Check Doctor
       if (doctorId) {
-        await axios.get(`${doctorServiceUrl}/doctor/${doctorId}`, {
+        await axios.get(`${process.env.DOCTOR_SERVICE_URL}/doctor/${doctorId}`, {
           headers: { Authorization: req.headers.authorization }
         });
       }
@@ -102,8 +100,7 @@ asyncHandler(
        (Temporary method)
     ========================== */
 
-    const bookingServiceUrl = process.env.BOOKING_SERVICE_URL || "http://booking-service:3011";
-    const appointmentResponse = await axios.get(`${bookingServiceUrl}/booking`, {
+    const appointmentResponse = await axios.get(`${process.env.BOOKING_SERVICE_URL}/booking`, {
       headers: {
         Authorization: req.headers.authorization
       }
@@ -167,7 +164,8 @@ asyncHandler(
         userId,
         hospitalId,
         doctorId,
-        comment
+        comment,
+        rating
       });
 
     /* =========================
@@ -292,28 +290,209 @@ export const reviewDelete: any = asyncHandler(async (req: Request, res: Response
 
 // GET ALL - GET /review
 export const getReview: any = asyncHandler(async (req: Request, res: Response) => {
-  const review = await Review.findAll();
 
-  if (review.length === 0) {
-    res.status(404).json({
-      success: false,
-      message: "No data found",
-      data: null,
-      error: { code: "NO_DATA_FOUND", details: null },
+
+    let {
+      hospitalId,
+      doctorId,
+      page = 1,
+      limit = 5,
+    }: any = req.query;
+
+    // normalize arrays
+    const normalize = (val: any) =>
+      Array.isArray(val) ? val[0] : val;
+
+    hospitalId = normalize(hospitalId);
+    doctorId = normalize(doctorId);
+    
+
+    page = Number(page) || 1;
+    limit = Number(limit) || 5;
+
+    const offset = (page - 1) * limit;
+
+    // base filter
+    const whereClause: any = {
+      isDelete: false,
+    };
+
+    // hospital filter
+    if (hospitalId) {
+      whereClause.hospitalId = Number(hospitalId);
+    }
+
+     if (doctorId) {
+      whereClause.doctorId = Number(doctorId);
+    }
+
+
+
+   const { count, rows } = await Review.findAndCountAll({
+      where: whereClause,
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
     });
-    return;
-  }
 
-  res.status(200).json({
-    success: true,
-    status: "Success",
-    data: review,
-    error: null,
-  });
+    if (!rows.length) {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        data: [],
+        pagination: {
+          totalItems: 0,
+          totalPages: 0,
+          currentPage: page,
+          limit,
+        },
+        error: {
+          code: "NO_DATA_FOUND",
+          details: null,
+        },
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Review fetched successfully",
+      data: rows,
+      pagination: {
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+        currentPage: page,
+        limit,
+        hasNextPage: page < Math.ceil(count / limit),
+        hasPreviousPage: page > 1,
+      },
+      error: null,
+    });
+
+
+
 });
 
 
 
 
+export const getRating: any = asyncHandler(
+  async (req: Request, res: Response) => {
+    let { hospitalId, doctorId }: any = req.query;
 
+    // Normalize query params
+    const normalize = (val: any) =>
+      Array.isArray(val) ? val[0] : val;
 
+    hospitalId = normalize(hospitalId);
+    doctorId = normalize(doctorId);
+
+    // Base filter
+    const whereClause: any = {
+      isDelete: false,
+    };
+
+    if (hospitalId) {
+      whereClause.hospitalId = Number(hospitalId);
+    }
+
+    if (doctorId) {
+      whereClause.doctorId = Number(doctorId);
+    }
+
+    // Fetch reviews
+    const reviews = await Review.findAll({
+      where: whereClause,
+      order: [["createdAt", "DESC"]],
+    });
+
+    const totalReviews = reviews.length;
+
+    // Rating counters
+    const breakdown = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    };
+
+    let totalRating = 0;
+
+    reviews.forEach((review: any) => {
+      const star = Number(review.rating);
+
+      if (star >= 1 && star <= 5) {
+        breakdown[star as keyof typeof breakdown]++;
+        totalRating += star;
+      }
+    });
+
+    // Average Rating
+    const averageRating =
+      totalReviews > 0
+        ? Number((totalRating / totalReviews).toFixed(1))
+        : 0;
+
+    // Percentage Calculation
+    const ratingBreakdown = {
+      5: {
+        count: breakdown[5],
+        percentage:
+          totalReviews > 0
+            ? Number(
+                ((breakdown[5] / totalReviews) * 100).toFixed(1)
+              )
+            : 0,
+      },
+      4: {
+        count: breakdown[4],
+        percentage:
+          totalReviews > 0
+            ? Number(
+                ((breakdown[4] / totalReviews) * 100).toFixed(1)
+              )
+            : 0,
+      },
+      3: {
+        count: breakdown[3],
+        percentage:
+          totalReviews > 0
+            ? Number(
+                ((breakdown[3] / totalReviews) * 100).toFixed(1)
+              )
+            : 0,
+      },
+      2: {
+        count: breakdown[2],
+        percentage:
+          totalReviews > 0
+            ? Number(
+                ((breakdown[2] / totalReviews) * 100).toFixed(1)
+              )
+            : 0,
+      },
+      1: {
+        count: breakdown[1],
+        percentage:
+          totalReviews > 0
+            ? Number(
+                ((breakdown[1] / totalReviews) * 100).toFixed(1)
+              )
+            : 0,
+      },
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Rating fetched successfully",
+      data: {
+        averageRating,
+        totalReviews,
+        ratingBreakdown,
+        reviews,
+      },
+      error: null,
+    });
+  }
+);
