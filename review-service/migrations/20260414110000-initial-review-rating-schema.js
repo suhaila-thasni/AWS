@@ -13,6 +13,15 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
       },
+
+         name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      imageUrl: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       hospitalId: {
         type: Sequelize.INTEGER,
         allowNull: true,
