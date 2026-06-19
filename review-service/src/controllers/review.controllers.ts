@@ -323,6 +323,8 @@ export const getReview: any = asyncHandler(
 
     hospitalId = normalize(hospitalId);
     doctorId = normalize(doctorId);
+        page = normalize(page);
+    limit = normalize(limit);
 
     // Pagination
     page = Math.max(Number(page) || 1, 1);
